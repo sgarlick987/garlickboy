@@ -6,6 +6,9 @@
     "configurations": [
         {
             "type": "lldb",
+            "sourceMap": {
+                "/mnt/c/Users/sgarl/repos/garlickboy/": "/home/sgarlick/repos/garlickboy"
+            },
             "request": "launch",
             "name": "Debug executable 'garlickboy'",
             "cargo": {
@@ -19,11 +22,17 @@
                     "kind": "bin"
                 }
             },
+            "env": {
+                "DISPLAY": "172.17.192.1:0.0"
+            },
             "args": [],
             "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
+            "sourceMap": {
+                "/mnt/c/Users/sgarl/repos/garlickboy/": "/home/sgarlick/repos/garlickboy"
+            },
             "request": "launch",
             "name": "Debug unit tests in executable 'garlickboy'",
             "cargo": {
@@ -37,6 +46,9 @@
                     "name": "garlickboy",
                     "kind": "bin"
                 }
+            },
+            "env": {
+                "DISPLAY": "172.17.192.1:0.0"
             },
             "args": [],
             "cwd": "${workspaceFolder}"
