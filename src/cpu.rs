@@ -1,5 +1,6 @@
-mod instructions;
-mod registers;
+#![allow(dead_code)]
+pub mod instructions;
+pub mod registers;
 
 use instructions::{Instruction, TargetRegister8, INSTRUCTION_PREFIX_BYTE};
 use registers::Registers;
@@ -128,15 +129,12 @@ impl CPU {
         if prefixed {
             instruction_byte = self.bus.read_byte(self.pc + 1);
         }
-
-        let next_pc = if let Some(instruction) = Instruction::from_byte(instruction_byte, prefixed)
-        {
-            self.execute(instruction)
-        } else {
+        let instruction = Instruction::from_byte(instruction_byte, prefixed);
+        if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
-        };
+        }
 
-        self.pc = next_pc;
+        self.pc = self.execute(instruction);
     }
 
     //handles the add Instructions by adding a given value to our a register

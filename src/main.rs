@@ -1,8 +1,6 @@
-#![feature(bigint_helper_methods)]
-mod cpu;
-mod roms;
+use garlickboy::rom;
 
 static GB_ROM: &str = "./data/Tetris.gb";
 fn main() {
-    let _rom = roms::load_rom(GB_ROM);
+    let _rom = rom::load_rom(GB_ROM);
 }

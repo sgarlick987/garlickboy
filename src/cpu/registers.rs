@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #[derive(Debug)]
 //documented gameboy registers
 //f of the af register is represented
