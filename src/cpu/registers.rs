@@ -15,41 +15,94 @@ pub struct Registers {
     pub flags: FlagsRegister,
 }
 
+pub fn new_registers() -> Registers {
+    Registers {
+        a: 0,
+        b: 0,
+        c: 0,
+        d: 0,
+        e: 0,
+        h: 0,
+        l: 0,
+        sp: 0,
+        flags: FlagsRegister {
+            zero: false,
+            negative: false,
+            half_carry: false,
+            carry: false,
+        },
+    }
+}
+
+pub fn merge_bytes(upper: u8, lower: u8) -> u16 {
+    (upper as u16) << 8 | lower as u16
+}
+
+pub fn split_bytes(bytes: u16) -> [u8; 2] {
+    [((bytes & 0xFF00) >> 8) as u8, (bytes & 0x00FF) as u8]
+}
+
+pub fn bytes_half_carry(a: u8, b: u8) -> bool {
+    (a & 0x0F) + (b & 0x0F) > 0x0F
+}
+
 impl Registers {
-    fn get_bc(&self) -> u16 {
-        (self.b as u16) << 8 | (self.c as u16)
+    pub fn get_af(&self) -> u16 {
+        merge_bytes(self.a, u8::from(self.flags))
     }
 
-    fn set_bc(&mut self, bc: u16) {
-        self.b = ((bc & 0xFF00) >> 8) as u8;
-        self.c = (bc & 0x00FF) as u8
-    }
-    fn get_de(&self) -> u16 {
-        (self.d as u16) << 8 | (self.e as u16)
+    pub fn get_bc(&self) -> u16 {
+        merge_bytes(self.b, self.c)
     }
 
-    fn set_de(&mut self, de: u16) {
-        self.d = ((de & 0xFF00) >> 8) as u8;
-        self.e = (de & 0x00FF) as u8
+    pub fn get_de(&self) -> u16 {
+        merge_bytes(self.d, self.e)
     }
 
-    fn get_hl(&self) -> u16 {
-        (self.h as u16) << 8 | (self.l as u16)
+    pub fn get_hl(&self) -> u16 {
+        merge_bytes(self.h, self.l)
     }
 
-    fn set_hl(&mut self, hl: u16) {
-        self.h = ((hl & 0xFF00) >> 8) as u8;
-        self.l = (hl & 0x00FF) as u8
+    pub fn get_f(&self) -> u8 {
+        u8::from(self.flags)
+    }
+
+    pub fn set_af(&mut self, af: u16) {
+        let bytes = split_bytes(af);
+        self.a = bytes[0];
+        self.flags = FlagsRegister::from(bytes[1]);
+    }
+
+    pub fn set_bc(&mut self, bc: u16) {
+        let bytes = split_bytes(bc);
+        self.b = bytes[0];
+        self.c = bytes[1];
+    }
+
+    pub fn set_de(&mut self, de: u16) {
+        let bytes = split_bytes(de);
+        self.d = bytes[0];
+        self.e = bytes[1];
+    }
+
+    pub fn set_hl(&mut self, hl: u16) {
+        let bytes = split_bytes(hl);
+        self.h = bytes[0];
+        self.l = bytes[1];
+    }
+
+    pub fn set_sp(&mut self, upper: u8, lower: u8) {
+        self.sp = (upper as u16) << 8 | lower as u16;
     }
 }
 
 //this represents the lower 8 bits of our AF register
 //since it serves a special case of the 4 upper bits being special flags
 //the lower 4 bits are always set to 0 so they aren't represented here.
-#[derive(Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub struct FlagsRegister {
     pub zero: bool,
-    pub subtraction: bool,
+    pub negative: bool,
     pub half_carry: bool,
     pub carry: bool,
 }
@@ -70,7 +123,7 @@ impl std::convert::From<FlagsRegister> for u8 {
             FLAGS_REGISTER_ZERO_BYTE
         } else {
             0
-        }) | (if flag.subtraction {
+        }) | (if flag.negative {
             FLAGS_REGISTER_SUBTRACTION_BYTE
         } else {
             0
@@ -97,7 +150,7 @@ impl std::convert::From<u8> for FlagsRegister {
 
         FlagsRegister {
             zero,
-            subtraction,
+            negative: subtraction,
             half_carry,
             carry,
         }

@@ -101,7 +101,7 @@ pub fn load_rom(path: &str) -> Rom {
     println!("{:#?}", header);
     Rom {
         header: header,
-        data: data[0x0150..].to_vec(),
+        data: data.to_vec(),
     }
 }
 
