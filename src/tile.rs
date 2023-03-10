@@ -1,39 +1,3 @@
-// fn decode_color(upper: u8, lower: u8) -> Color {
-//     match upper {
-//         1 => match lower {
-//             1 => Color::BLACK.clone(),
-//             0 => Color {
-//                 r: 169,
-//                 g: 169,
-//                 b: 169,
-//             },
-//             _ => panic!("invalid color"),
-//         },
-//         0 => match lower {
-//             0 => Color::WHITE.clone(),
-//             1 => Color {
-//                 r: 221,
-//                 g: 221,
-//                 b: 221,
-//             },
-//             _ => panic!("invalid color"),
-//         },
-//         _ => panic!("invalid color"),
-//     }
-// }
-
-// fn bytes_to_color(upper: u8, lower: u8) -> Vec<Color> {
-//     vec![
-//         decode_color((upper >> 7) & 0b1, (lower >> 7) & 0b1),
-//         decode_color((upper >> 6) & 0b1, (lower >> 6) & 0b1),
-//         decode_color((upper >> 5) & 0b1, (lower >> 5) & 0b1),
-//         decode_color((upper >> 4) & 0b1, (lower >> 4) & 0b1),
-//         decode_color((upper >> 3) & 0b1, (lower >> 3) & 0b1),
-//         decode_color((upper >> 2) & 0b1, (lower >> 2) & 0b1),
-//         decode_color((upper >> 1) & 0b1, (lower >> 1) & 0b1),
-//         decode_color(upper & 0b1, lower & 0b1),
-//     ]
-// }
 
 // +------+------------+
 // | 0b11 | white      |

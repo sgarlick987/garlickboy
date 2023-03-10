@@ -2,7 +2,9 @@
 pub mod instructions;
 pub mod registers;
 use registers::Registers;
+use sdl2::render::Canvas;
 
+use crate::gpu::*;
 use crate::{bios::Bios, rom::Rom};
 
 use self::{
@@ -17,10 +19,11 @@ pub struct CPU {
     pc: u16,
 }
 
-pub fn new_cpu() -> CPU {
+pub fn new() -> CPU {
     let registers = registers::new_registers();
     let mut bus = AddressBus {
         memory: [0; 0xFFFF],
+        gpu: GPU::new(),
     };
     bus.write_bytes(0xFF44, [0x90].to_vec());
 
@@ -32,19 +35,39 @@ pub fn new_cpu() -> CPU {
 }
 
 #[derive(Debug)]
-struct AddressBus {
-    memory: [u8; 0xFFFF],
+pub struct AddressBus {
+    pub memory: [u8; 0xFFFF],
+    gpu: GPU,
 }
 
 impl AddressBus {
     fn read_byte(&self, address: u16) -> u8 {
-        self.memory[address as usize]
+        let address = address as usize;
+        match address {
+            VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
+            _ => self.memory[address],
+        }
     }
 
     fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
-        let start = address as usize;
-        let end = start + bytes.len();
-        self.memory[start..end].copy_from_slice(bytes.as_slice());
+        let address = address as usize;
+        match address {
+            VRAM_BEGIN..=VRAM_END => {
+                self.gpu.write_vram(address - VRAM_BEGIN, bytes);
+            }
+            0xFF47 => {
+                if bytes.len() != 1 {
+                    panic!(
+                        "only one byte should be supplied when writing to palette address 0xFF47"
+                    );
+                }
+                self.gpu.set_palette(bytes[0]);
+            }
+            _ => {
+                let end = address + bytes.len();
+                self.memory[address..end].copy_from_slice(bytes.as_slice());
+            }
+        }
     }
 
     fn write_byte(&mut self, address: u16, byte: u8) {
@@ -53,13 +76,16 @@ impl AddressBus {
 }
 
 impl CPU {
+    pub fn render(&mut self, canvas: &mut Canvas<sdl2::video::Window>) {
+        self.bus.gpu.render(canvas);
+    }
+
     pub fn write_bios(&mut self, bios: Bios) {
         self.bus.write_bytes(0x0000, bios.data.to_vec());
     }
 
     pub fn write_rom(&mut self, rom: Rom) {
-        self.bus
-            .write_bytes(0x0100, rom.data[0x0100..0x0150].to_vec());
+        self.bus.write_bytes(0x0100, rom.data[0x0100..].to_vec());
     }
 
     fn execute(&mut self, instruction: Instruction) -> u16 {
@@ -740,7 +766,7 @@ impl CPU {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> bool {
         let mut instruction_byte = self.bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == INSTRUCTION_PREFIX_BYTE;
@@ -751,8 +777,11 @@ impl CPU {
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
-
+        if instruction == Instruction::NOP {
+            return false;
+        }
         self.pc = self.execute(instruction);
+        return true;
     }
 
     //handles the add Instructions by adding a given value to our a register

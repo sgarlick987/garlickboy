@@ -5,7 +5,7 @@ use std::io::Read;
 use std::num::Wrapping;
 use std::str::from_utf8;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum ColorModes {
     Enhanced = 0x80,
@@ -13,14 +13,14 @@ enum ColorModes {
     None = 0x00,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum DestinationCode {
     Japan = 0x00,
     OverseasOnly = 0x01,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum RomSize {
     K32 = 0x00,
@@ -37,7 +37,7 @@ enum RomSize {
     M15 = 0x54,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum RamSize {
     NoRam = 0x00,
@@ -48,7 +48,7 @@ enum RamSize {
     K64 = 0x05,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct RomHeaderRaw {
     old_licensee_code: u8,
     destination_code: u8,
@@ -65,9 +65,9 @@ struct RomHeaderRaw {
     logo: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RomHeader {
-    title: String,
+    pub title: String,
     gbc_mode: ColorModes,
     ram_size: RamSize,
     rom_size: RomSize,
@@ -76,7 +76,7 @@ pub struct RomHeader {
     global_checksum: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rom {
     pub header: RomHeader,
     pub data: Vec<u8>,
