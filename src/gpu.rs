@@ -1,9 +1,9 @@
+use sdl2::{pixels::Color, rect::Rect, render::Canvas};
+
 pub const VRAM_BEGIN: usize = 0x8000;
 pub const VRAM_END: usize = 0x9FFF;
 pub const VRAM_SIZE: usize = VRAM_END - VRAM_BEGIN + 1;
-use sdl2::{pixels::Color, rect::Rect, render::Canvas};
 
-#[derive(Debug)]
 pub struct GPU {
     pub vram: [u8; VRAM_SIZE],
     pub palette: CurrentPalette,
@@ -77,18 +77,6 @@ impl GPU {
         }
     }
 
-    pub const fn new() -> GPU {
-        GPU {
-            vram: [0; VRAM_SIZE],
-            palette: CurrentPalette {
-                zero: Color::WHITE,
-                one: Color::RGB(221, 221, 221),
-                two: Color::RGB(169, 169, 169),
-                three: Color::BLACK,
-            },
-        }
-    }
-
     pub fn write_vram(&mut self, address: usize, bytes: Vec<u8>) {
         let end = address + bytes.len();
         self.vram[address..end].copy_from_slice(bytes.as_slice());
@@ -99,7 +87,18 @@ impl GPU {
     }
 }
 
-#[derive(Debug)]
+pub fn new_gpu() -> GPU {
+    GPU {
+        vram: [0; VRAM_SIZE],
+        palette: CurrentPalette {
+            zero: Color::WHITE,
+            one: Color::RGB(221, 221, 221),
+            two: Color::RGB(169, 169, 169),
+            three: Color::BLACK,
+        },
+    }
+}
+
 pub struct CurrentPalette {
     zero: Color,
     one: Color,

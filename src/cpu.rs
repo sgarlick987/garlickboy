@@ -12,18 +12,17 @@ use self::{
     registers::{bytes_half_carry, merge_bytes, split_bytes, FlagsRegister},
 };
 
-#[derive(Debug)]
 pub struct CPU {
     registers: Registers,
     bus: AddressBus,
     pc: u16,
 }
 
-pub fn new() -> CPU {
+pub fn new_cpu() -> CPU {
     let registers = registers::new_registers();
     let mut bus = AddressBus {
         memory: [0; 0xFFFF],
-        gpu: GPU::new(),
+        gpu: new_gpu(),
     };
     bus.write_bytes(0xFF44, [0x90].to_vec());
 
@@ -34,7 +33,6 @@ pub fn new() -> CPU {
     }
 }
 
-#[derive(Debug)]
 pub struct AddressBus {
     pub memory: [u8; 0xFFFF],
     gpu: GPU,
@@ -679,12 +677,10 @@ impl CPU {
                         let mut new_c = self.registers.c << 1;
 
                         if self.registers.flags.carry {
-                            new_c |= 1
+                            new_c |= 1;
                         }
 
-                        if self.registers.c >> 7 == 1 {
-                            self.registers.flags.carry = true;
-                        }
+                        self.registers.flags.carry = self.registers.c >> 7 == 1;
 
                         self.registers.flags.zero = new_c == 0;
                         self.registers.c = new_c;
@@ -704,12 +700,11 @@ impl CPU {
                 let mut new_a = self.registers.a << 1;
 
                 if self.registers.flags.carry {
-                    new_a |= 1
+                    new_a |= 1;
                 }
 
-                if self.registers.a >> 7 == 1 {
-                    self.registers.flags.carry = true;
-                }
+                self.registers.flags.carry = self.registers.a >> 7 == 1;
+
                 self.registers.a = new_a;
 
                 self.pc.wrapping_add(1)
