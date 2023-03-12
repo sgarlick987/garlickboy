@@ -1,35 +1,74 @@
-use crate::{address::AddressBus, cpu::CPU, gpu::GPU};
+use crate::{address::*, bios::*, cpu::*, gpu::*, rom::*};
+use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPump};
 
-const VIDEO_SCALE: u32 = 4;
+const MAX_CYCLES: u32 = 69905;
+const GB_ROM: &str = "./data/Tetris.gb";
 
-fn new_emu() -> Emu<'static> {
-    let sdl = sdl2::init().unwrap();
-    let video = sdl.video().unwrap();
-    let window = video
-        .window("GarlickBoy", 160 * VIDEO_SCALE, 144 * VIDEO_SCALE)
-        .position_centered()
-        .allow_highdpi()
-        .opengl()
-        .build()
-        .unwrap();
-    let mut canvas = window
-        .into_canvas()
-        .present_vsync()
-        .accelerated()
-        .build()
-        .unwrap();
-    canvas
-        .set_scale(VIDEO_SCALE as f32, VIDEO_SCALE as f32)
-        .unwrap();
-
-    let gpu = &mut GPU::new(canvas);
-    let bus = &AddressBus::new(gpu);
-    let cpu = &CPU::new(bus);
-    Emu { cpu, gpu, bus }
+pub struct Emu {
+    fps_manager: FPSManager,
+    cpu: CPU,
+    rom: Rom,
+    bios: Bios,
+    event_pump: EventPump,
 }
 
-struct Emu<'a> {
-    cpu: &'a CPU<'a>,
-    gpu: &'a GPU,
-    bus: &'a AddressBus<'a>,
+impl Emu {
+    pub fn new() -> Emu {
+        let rom = load_rom(GB_ROM);
+        let bios = load_bios("data/dmg_rom.bin");
+        let screen = Screen::new();
+        let event_pump = screen.event_pump();
+
+        let mut fps_manager = FPSManager::new();
+        fps_manager
+            .set_framerate(60)
+            .expect("failed to set fps_manager framerate to 60");
+        let gpu = GPU::new(screen);
+        let address_bus = AddressBus::new(gpu);
+        let cpu = CPU::new(address_bus);
+
+        Emu {
+            fps_manager,
+            cpu,
+            rom,
+            bios,
+            event_pump,
+        }
+    }
+
+    pub fn init(&mut self) {
+        self.write_bios();
+        self.write_rom();
+    }
+
+    fn write_bios(&mut self) {
+        self.cpu.write_bytes(0x0000, self.bios.data.to_vec());
+    }
+
+    fn write_rom(&mut self) {
+        self.cpu
+            .write_bytes(0x0100, self.rom.data[0x0100..].to_vec());
+    }
+
+    pub fn update(&mut self) -> bool {
+        for event in self.event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => return false,
+                _ => {}
+            }
+        }
+        let mut cycles_used = 0;
+        while cycles_used < MAX_CYCLES {
+            self.cpu.step();
+            let cycles = 20;
+            cycles_used += cycles;
+        }
+        self.cpu.render();
+        self.fps_manager.delay();
+        true
+    }
 }

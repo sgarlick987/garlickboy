@@ -1,12 +1,12 @@
 use crate::gpu::*;
 
 pub struct AddressBus {
-    pub memory: [u8; 0xFFFF],
+    memory: [u8; 0xFFFF],
     pub gpu: GPU,
 }
 
 impl AddressBus {
-    pub const fn new(gpu: &mut GPU) -> AddressBus {
+    pub fn new(gpu: GPU) -> AddressBus {
         AddressBus {
             memory: [0; 0xFFFF],
             gpu,
@@ -25,6 +25,9 @@ impl AddressBus {
     pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
         let address = address as usize;
         match address {
+            0x9800..=0x9BFF => {
+                self.gpu.write_vram(address - VRAM_BEGIN, bytes);
+            }
             VRAM_BEGIN..=VRAM_END => {
                 self.gpu.write_vram(address - VRAM_BEGIN, bytes);
             }
@@ -35,6 +38,22 @@ impl AddressBus {
                     );
                 }
                 self.gpu.set_palette(bytes[0]);
+            }
+            0xFF42 => {
+                if bytes.len() != 1 {
+                    panic!(
+                        "only one byte should be supplied when writing to scrollx address 0xFF42"
+                    );
+                }
+                self.gpu.scrolly = bytes[0];
+            }
+            0xFF43 => {
+                if bytes.len() != 1 {
+                    panic!(
+                        "only one byte should be supplied when writing to scrolly address 0xFF43"
+                    );
+                }
+                self.gpu.scrollx = bytes[0];
             }
             _ => {
                 let end = address + bytes.len();

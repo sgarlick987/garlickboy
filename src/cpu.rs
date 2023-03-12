@@ -1,89 +1,33 @@
 #![allow(dead_code)]
 pub mod instructions;
 pub mod registers;
-use registers::Registers;
-use sdl2::render::Canvas;
 
-use crate::gpu::*;
-use crate::{bios::Bios, rom::Rom};
+use crate::address::*;
 
-use self::{
-    instructions::*,
-    registers::{bytes_half_carry, merge_bytes, split_bytes, FlagsRegister},
-};
+use self::{instructions::*, registers::*};
 
 pub struct CPU {
     registers: Registers,
-    bus: AddressBus,
+    pub address_bus: AddressBus,
     pc: u16,
 }
 
-pub fn new_cpu() -> CPU {
-    let registers = registers::new_registers();
-    let mut bus = AddressBus {
-        memory: [0; 0xFFFF],
-        gpu: new_gpu(),
-    };
-    bus.write_bytes(0xFF44, [0x90].to_vec());
-
-    CPU {
-        registers,
-        bus,
-        pc: 0,
-    }
-}
-
-pub struct AddressBus {
-    pub memory: [u8; 0xFFFF],
-    gpu: GPU,
-}
-
-impl AddressBus {
-    fn read_byte(&self, address: u16) -> u8 {
-        let address = address as usize;
-        match address {
-            VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
-            _ => self.memory[address],
-        }
-    }
-
-    fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
-        let address = address as usize;
-        match address {
-            VRAM_BEGIN..=VRAM_END => {
-                self.gpu.write_vram(address - VRAM_BEGIN, bytes);
-            }
-            0xFF47 => {
-                if bytes.len() != 1 {
-                    panic!(
-                        "only one byte should be supplied when writing to palette address 0xFF47"
-                    );
-                }
-                self.gpu.set_palette(bytes[0]);
-            }
-            _ => {
-                let end = address + bytes.len();
-                self.memory[address..end].copy_from_slice(bytes.as_slice());
-            }
-        }
-    }
-
-    fn write_byte(&mut self, address: u16, byte: u8) {
-        self.write_bytes(address, [byte].to_vec());
-    }
-}
-
 impl CPU {
-    pub fn render(&mut self, canvas: &mut Canvas<sdl2::video::Window>) {
-        self.bus.gpu.render(canvas);
+    pub fn new(address_bus: AddressBus) -> CPU {
+        let registers = registers::new_registers();
+        CPU {
+            registers,
+            address_bus,
+            pc: 0,
+        }
     }
 
-    pub fn write_bios(&mut self, bios: Bios) {
-        self.bus.write_bytes(0x0000, bios.data.to_vec());
+    pub fn render(&mut self) {
+        self.address_bus.gpu.render();
     }
 
-    pub fn write_rom(&mut self, rom: Rom) {
-        self.bus.write_bytes(0x0100, rom.data[0x0100..].to_vec());
+    pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
+        self.address_bus.write_bytes(address, bytes);
     }
 
     fn execute(&mut self, instruction: Instruction) -> u16 {
@@ -135,7 +79,7 @@ impl CPU {
             },
             Instruction::ADDHL => {
                 let hl = self.registers.get_hl();
-                let stored = self.bus.read_byte(hl);
+                let stored = self.address_bus.read_byte(hl);
                 let added = self.add(stored, false);
                 self.registers.a = added;
                 self.pc.wrapping_add(1)
@@ -282,8 +226,8 @@ impl CPU {
                     }
                     TargetIncDec::HLPOINTER => {
                         let address = self.registers.get_hl();
-                        let byte = self.bus.read_byte(address) - 1;
-                        self.bus.write_byte(address, byte);
+                        let byte = self.address_bus.read_byte(address) - 1;
+                        self.address_bus.write_byte(address, byte);
                     }
                 }
                 self.pc.wrapping_add(1)
@@ -334,18 +278,18 @@ impl CPU {
             Instruction::LDU16(target) => {
                 match target {
                     TargetRegister16::SP => {
-                        let lower = self.bus.read_byte(self.pc + 1);
-                        let upper = self.bus.read_byte(self.pc + 2);
+                        let lower = self.address_bus.read_byte(self.pc + 1);
+                        let upper = self.address_bus.read_byte(self.pc + 2);
 
                         self.registers.set_sp(upper, lower);
                     }
                     TargetRegister16::HL => {
-                        self.registers.l = self.bus.read_byte(self.pc + 1);
-                        self.registers.h = self.bus.read_byte(self.pc + 2);
+                        self.registers.l = self.address_bus.read_byte(self.pc + 1);
+                        self.registers.h = self.address_bus.read_byte(self.pc + 2);
                     }
                     TargetRegister16::DE => {
-                        self.registers.e = self.bus.read_byte(self.pc + 1);
-                        self.registers.d = self.bus.read_byte(self.pc + 2);
+                        self.registers.e = self.address_bus.read_byte(self.pc + 1);
+                        self.registers.d = self.address_bus.read_byte(self.pc + 2);
                     }
                     _ => {
                         panic!("{:?} unimplemented LDU16", target);
@@ -356,9 +300,9 @@ impl CPU {
             }
             Instruction::LDAPTR(target) => {
                 self.registers.a = match target {
-                    TargetPointer::BC => self.bus.read_byte(self.registers.get_bc()),
-                    TargetPointer::DE => self.bus.read_byte(self.registers.get_de()),
-                    TargetPointer::HL => self.bus.read_byte(self.registers.get_hl()),
+                    TargetPointer::BC => self.address_bus.read_byte(self.registers.get_bc()),
+                    TargetPointer::DE => self.address_bus.read_byte(self.registers.get_de()),
+                    TargetPointer::HL => self.address_bus.read_byte(self.registers.get_hl()),
                 };
 
                 self.pc.wrapping_add(1)
@@ -374,7 +318,7 @@ impl CPU {
                 }
             },
             Instruction::LDU8(target) => {
-                let value = self.bus.read_byte(self.pc + 1);
+                let value = self.address_bus.read_byte(self.pc + 1);
 
                 match target {
                     TargetRegister8::A => {
@@ -404,33 +348,36 @@ impl CPU {
             }
             Instruction::LDFF00CA => {
                 let address = 0xFF00 + self.registers.c as u16;
-                self.bus.write_bytes(address, [self.registers.a].to_vec());
+                self.address_bus
+                    .write_bytes(address, [self.registers.a].to_vec());
 
                 self.pc.wrapping_add(1)
             }
             Instruction::LDAFF00U8 => {
-                let address = 0xFF00 + self.bus.read_byte(self.pc + 1) as u16;
-                self.registers.a = self.bus.read_byte(address);
+                let address = 0xFF00 + self.address_bus.read_byte(self.pc + 1) as u16;
+                self.registers.a = self.address_bus.read_byte(address);
 
                 self.pc.wrapping_add(2)
             }
             Instruction::LDDHLA => {
                 let hl = self.registers.get_hl();
-                self.bus.write_bytes(hl, [self.registers.a].to_vec());
+                self.address_bus
+                    .write_bytes(hl, [self.registers.a].to_vec());
                 self.registers.set_hl(hl - 1);
 
                 self.pc.wrapping_add(1)
             }
             Instruction::LDIHLA => {
                 let hl = self.registers.get_hl();
-                self.bus.write_bytes(hl, [self.registers.a].to_vec());
+                self.address_bus
+                    .write_bytes(hl, [self.registers.a].to_vec());
                 self.registers.set_hl(hl + 1);
 
                 self.pc.wrapping_add(1)
             }
             Instruction::LDHLR8(target) => match target {
                 TargetRegister8::A => {
-                    self.bus
+                    self.address_bus
                         .write_bytes(self.registers.get_hl(), [self.registers.a].to_vec());
 
                     self.pc.wrapping_add(1)
@@ -440,8 +387,9 @@ impl CPU {
                 }
             },
             Instruction::LDFF00U8A => {
-                let address = 0xFF00 + self.bus.read_byte(self.pc + 1) as u16;
-                self.bus.write_bytes(address, [self.registers.a].to_vec());
+                let address = 0xFF00 + self.address_bus.read_byte(self.pc + 1) as u16;
+                self.address_bus
+                    .write_bytes(address, [self.registers.a].to_vec());
 
                 self.pc.wrapping_add(2)
             }
@@ -450,25 +398,25 @@ impl CPU {
 
                 match target {
                     TargetPushPop::AF => {
-                        self.bus.write_bytes(
+                        self.address_bus.write_bytes(
                             self.registers.sp,
                             [self.registers.get_f(), self.registers.a].to_vec(),
                         );
                     }
                     TargetPushPop::HL => {
-                        self.bus.write_bytes(
+                        self.address_bus.write_bytes(
                             self.registers.sp,
                             [self.registers.l, self.registers.h].to_vec(),
                         );
                     }
                     TargetPushPop::BC => {
-                        self.bus.write_bytes(
+                        self.address_bus.write_bytes(
                             self.registers.sp,
                             [self.registers.c, self.registers.b].to_vec(),
                         );
                     }
                     TargetPushPop::DE => {
-                        self.bus.write_bytes(
+                        self.address_bus.write_bytes(
                             self.registers.sp,
                             [self.registers.e, self.registers.d].to_vec(),
                         );
@@ -480,21 +428,21 @@ impl CPU {
             Instruction::POP(target) => {
                 match target {
                     TargetPushPop::AF => {
-                        self.registers.a = self.bus.read_byte(self.registers.sp + 1);
+                        self.registers.a = self.address_bus.read_byte(self.registers.sp + 1);
                         self.registers.flags =
-                            FlagsRegister::from(self.bus.read_byte(self.registers.sp));
+                            FlagsRegister::from(self.address_bus.read_byte(self.registers.sp));
                     }
                     TargetPushPop::HL => {
-                        self.registers.h = self.bus.read_byte(self.registers.sp + 1);
-                        self.registers.l = self.bus.read_byte(self.registers.sp);
+                        self.registers.h = self.address_bus.read_byte(self.registers.sp + 1);
+                        self.registers.l = self.address_bus.read_byte(self.registers.sp);
                     }
                     TargetPushPop::BC => {
-                        self.registers.b = self.bus.read_byte(self.registers.sp + 1);
-                        self.registers.c = self.bus.read_byte(self.registers.sp);
+                        self.registers.b = self.address_bus.read_byte(self.registers.sp + 1);
+                        self.registers.c = self.address_bus.read_byte(self.registers.sp);
                     }
                     TargetPushPop::DE => {
-                        self.registers.d = self.bus.read_byte(self.registers.sp + 1);
-                        self.registers.e = self.bus.read_byte(self.registers.sp);
+                        self.registers.d = self.address_bus.read_byte(self.registers.sp + 1);
+                        self.registers.e = self.address_bus.read_byte(self.registers.sp);
                     }
                 }
                 self.registers.sp += 2;
@@ -517,21 +465,21 @@ impl CPU {
             },
             Instruction::JP => {
                 let address = merge_bytes(
-                    self.bus.read_byte(self.pc + 2),
-                    self.bus.read_byte(self.pc + 1),
+                    self.address_bus.read_byte(self.pc + 2),
+                    self.address_bus.read_byte(self.pc + 1),
                 );
 
                 address
             }
             Instruction::JR => {
-                let offset = self.bus.read_byte(self.pc + 1) as i8;
+                let offset = self.address_bus.read_byte(self.pc + 1) as i8;
 
                 self.pc.wrapping_add(2).wrapping_add(offset as u16)
             }
             Instruction::JRF(comparison) => match comparison {
                 Comparison::NONZERO => {
                     if !self.registers.flags.zero {
-                        let offset = self.bus.read_byte(self.pc + 1) as i8;
+                        let offset = self.address_bus.read_byte(self.pc + 1) as i8;
 
                         self.pc.wrapping_add(2).wrapping_add(offset as u16)
                     } else {
@@ -540,7 +488,7 @@ impl CPU {
                 }
                 Comparison::ZERO => {
                     if self.registers.flags.zero {
-                        let offset = self.bus.read_byte(self.pc + 1) as i8;
+                        let offset = self.address_bus.read_byte(self.pc + 1) as i8;
 
                         self.pc.wrapping_add(2).wrapping_add(offset as u16)
                     } else {
@@ -552,7 +500,7 @@ impl CPU {
                 }
             },
             Instruction::LDR8U8(target) => {
-                let byte = self.bus.read_byte(self.pc + 1);
+                let byte = self.address_bus.read_byte(self.pc + 1);
                 match target {
                     TargetRegister8::A => {
                         self.registers.a = byte;
@@ -663,9 +611,12 @@ impl CPU {
                 self.pc.wrapping_add(1)
             }
             Instruction::LDU16A => {
-                let address =
-                    merge_bytes(self.bus.read_byte(self.pc + 1), self.bus.read_byte(self.pc));
-                self.bus.write_bytes(address, [self.registers.a].to_vec());
+                let address = merge_bytes(
+                    self.address_bus.read_byte(self.pc + 2),
+                    self.address_bus.read_byte(self.pc + 1),
+                );
+                self.address_bus
+                    .write_bytes(address, [self.registers.a].to_vec());
 
                 self.pc.wrapping_add(3)
             }
@@ -710,7 +661,7 @@ impl CPU {
                 self.pc.wrapping_add(1)
             }
             Instruction::CPU8 => {
-                let byte = self.bus.read_byte(self.pc + 1);
+                let byte = self.address_bus.read_byte(self.pc + 1);
                 let a = self.registers.a;
 
                 self.registers.flags.negative = true;
@@ -722,7 +673,7 @@ impl CPU {
             }
             Instruction::CPHL => {
                 let hl = self.registers.get_hl();
-                let byte = self.bus.read_byte(hl);
+                let byte = self.address_bus.read_byte(hl);
                 let a = self.registers.a;
 
                 self.registers.flags.negative = true;
@@ -735,18 +686,18 @@ impl CPU {
             Instruction::CALL => {
                 self.registers.sp -= 2;
                 let bytes = split_bytes(self.pc.wrapping_add(3));
-                self.bus
+                self.address_bus
                     .write_bytes(self.registers.sp, [bytes[1], bytes[0]].to_vec());
-                let lower = self.bus.read_byte(self.pc + 1);
-                let upper = self.bus.read_byte(self.pc + 2);
+                let lower = self.address_bus.read_byte(self.pc + 1);
+                let upper = self.address_bus.read_byte(self.pc + 2);
                 let pc = merge_bytes(upper, lower);
 
                 pc
             }
             Instruction::RET => {
                 let pc = merge_bytes(
-                    self.bus.read_byte(self.registers.sp + 1),
-                    self.bus.read_byte(self.registers.sp),
+                    self.address_bus.read_byte(self.registers.sp + 1),
+                    self.address_bus.read_byte(self.registers.sp),
                 );
                 self.registers.sp += 2;
 
@@ -762,11 +713,11 @@ impl CPU {
     }
 
     pub fn step(&mut self) -> bool {
-        let mut instruction_byte = self.bus.read_byte(self.pc);
+        let mut instruction_byte = self.address_bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == INSTRUCTION_PREFIX_BYTE;
         if prefixed {
-            instruction_byte = self.bus.read_byte(self.pc + 1);
+            instruction_byte = self.address_bus.read_byte(self.pc + 1);
         }
         let instruction = Instruction::from_byte(instruction_byte, prefixed);
         if instruction == Instruction::UNIMPLEMENTED {
@@ -776,32 +727,24 @@ impl CPU {
             return false;
         }
         self.pc = self.execute(instruction);
-        return true;
+        true
     }
 
-    //handles the add Instructions by adding a given value to our a register
-    //and setting appropiate flags.
     fn add(&mut self, value: u8, carry: bool) -> u8 {
         let (added, overflowed) = self.registers.a.carrying_add(value, carry);
         self.registers.flags.zero = added == 0;
         self.registers.flags.negative = false;
         self.registers.flags.carry = overflowed;
-        //this is documented as taking the lower 4 bits of the a register and value add
-        //checking if they are greater than 0x0F
         self.registers.flags.half_carry = (self.registers.a & 0x0F) + (value & 0x0F) > 0x0F;
 
         added
     }
 
-    //handles the sub Instructions by subtracing a given value to our a register
-    //and setting appropiate flags.
     fn sub(&mut self, value: u8, carry: bool) -> u8 {
         let (subbed, overflowed) = self.registers.a.borrowing_sub(value, carry);
         self.registers.flags.zero = subbed == 0;
         self.registers.flags.negative = true;
         self.registers.flags.carry = overflowed;
-        //this is documented as taking the lower 4 bits of the a register and value add
-        //checking if they are greater than 0x0F
         (_, self.registers.flags.half_carry) =
             (self.registers.a & 0x0F).overflowing_sub(value & 0x0F);
 
