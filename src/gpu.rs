@@ -22,7 +22,7 @@ pub struct GPU {
 }
 
 // #[derive(Copy, Clone)]
-pub struct Palette {
+struct Palette {
     zero: Color,
     one: Color,
     two: Color,
