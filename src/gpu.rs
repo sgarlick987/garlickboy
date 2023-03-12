@@ -36,7 +36,7 @@ pub struct Screen {
     texture: RefCell<Texture<'static>>,
     data: Vec<u32>,
     width: u32,
-    height: u32,
+    // height: u32,
 }
 
 impl Screen {
@@ -82,7 +82,7 @@ impl Screen {
             texture: RefCell::new(texture),
             data: vec![0; (256 * 256) as usize],
             width: 256,
-            height: 256,
+            // height: 256,
         }
     }
 }
@@ -171,7 +171,11 @@ impl GPU {
         }
         let mut texture = self.screen.texture.borrow_mut();
         texture
-            .update(None, self.screen.data_raw(), self.screen.width as usize)
+            .update(
+                None,
+                self.screen.data_raw(),
+                (self.screen.width * 4) as usize,
+            )
             .expect("failed to update screen texture");
         self.screen
             .canvas
