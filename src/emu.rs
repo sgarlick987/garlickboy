@@ -63,8 +63,7 @@ impl Emu {
         }
         let mut cycles_used = 0;
         while cycles_used < MAX_CYCLES {
-            self.cpu.step();
-            let cycles = 20;
+            let cycles = self.cpu.step();
             cycles_used += cycles;
         }
         self.cpu.render();

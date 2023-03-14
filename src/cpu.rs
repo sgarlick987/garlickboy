@@ -12,6 +12,11 @@ pub struct CPU {
     pc: u16,
 }
 
+struct Step {
+    cycles: u8,
+    pc: u16,
+}
+
 impl CPU {
     pub fn new(address_bus: AddressBus) -> CPU {
         let registers = registers::new_registers();
@@ -30,149 +35,153 @@ impl CPU {
         self.address_bus.write_bytes(address, bytes);
     }
 
-    fn execute(&mut self, instruction: Instruction) -> u16 {
+    fn execute(&mut self, instruction: Instruction) -> Step {
         match instruction {
-            Instruction::NOP => self.pc.wrapping_add(1),
-            Instruction::ADCR8(target) => match target {
-                TargetRegister8::A => {
-                    let stored = self.registers.a;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::B => {
-                    let stored = self.registers.b;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::C => {
-                    let stored = self.registers.c;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::D => {
-                    let stored = self.registers.d;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::E => {
-                    let stored = self.registers.e;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::H => {
-                    let stored = self.registers.h;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::L => {
-                    let stored = self.registers.l;
-                    let added = self.add(stored, self.registers.flags.carry);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
+            Instruction::NOP => Step {
+                cycles: 4,
+                pc: self.pc.wrapping_add(1),
             },
+            Instruction::ADCR8(target) => {
+                match target {
+                    TargetRegister8::A => {
+                        let stored = self.registers.a;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::B => {
+                        let stored = self.registers.b;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::C => {
+                        let stored = self.registers.c;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::D => {
+                        let stored = self.registers.d;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::E => {
+                        let stored = self.registers.e;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::H => {
+                        let stored = self.registers.h;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::L => {
+                        let stored = self.registers.l;
+                        let added = self.add(stored, self.registers.flags.carry);
+                        self.registers.a = added;
+                    }
+                }
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
+                }
+            }
             Instruction::ADDHL => {
                 let hl = self.registers.get_hl();
                 let stored = self.address_bus.read_byte(hl);
                 let added = self.add(stored, false);
                 self.registers.a = added;
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
-            Instruction::ADDR8(target) => match target {
-                TargetRegister8::A => {
-                    let stored = self.registers.a;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
+            Instruction::ADDR8(target) => {
+                match target {
+                    TargetRegister8::A => {
+                        let stored = self.registers.a;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::B => {
+                        let stored = self.registers.b;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::C => {
+                        let stored = self.registers.c;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::D => {
+                        let stored = self.registers.d;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::E => {
+                        let stored = self.registers.e;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::H => {
+                        let stored = self.registers.h;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
+                    TargetRegister8::L => {
+                        let stored = self.registers.l;
+                        let added = self.add(stored, false);
+                        self.registers.a = added;
+                    }
                 }
-                TargetRegister8::B => {
-                    let stored = self.registers.b;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
                 }
-                TargetRegister8::C => {
-                    let stored = self.registers.c;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
+            }
+            Instruction::SUBR8(target) => {
+                match target {
+                    TargetRegister8::A => {
+                        let stored = self.registers.a;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
+                    TargetRegister8::B => {
+                        let stored = self.registers.b;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
+                    TargetRegister8::C => {
+                        let stored = self.registers.c;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
+                    TargetRegister8::D => {
+                        let stored = self.registers.d;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
+                    TargetRegister8::E => {
+                        let stored = self.registers.e;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
+                    TargetRegister8::H => {
+                        let stored = self.registers.h;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
+                    TargetRegister8::L => {
+                        let stored = self.registers.l;
+                        let subbed = self.sub(stored, false);
+                        self.registers.a = subbed;
+                    }
                 }
-                TargetRegister8::D => {
-                    let stored = self.registers.d;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
                 }
-                TargetRegister8::E => {
-                    let stored = self.registers.e;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::H => {
-                    let stored = self.registers.h;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::L => {
-                    let stored = self.registers.l;
-                    let added = self.add(stored, false);
-                    self.registers.a = added;
-                    self.pc.wrapping_add(1)
-                }
-            },
-            Instruction::SUBR8(target) => match target {
-                TargetRegister8::A => {
-                    let stored = self.registers.a;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::B => {
-                    let stored = self.registers.b;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::C => {
-                    let stored = self.registers.c;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::D => {
-                    let stored = self.registers.d;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::E => {
-                    let stored = self.registers.e;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::H => {
-                    let stored = self.registers.h;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-                TargetRegister8::L => {
-                    let stored = self.registers.l;
-                    let subbed = self.sub(stored, false);
-                    self.registers.a = subbed;
-                    self.pc.wrapping_add(1)
-                }
-            },
+            }
             Instruction::INC(target) => {
+                let mut cycles = 4;
                 match target {
                     TargetIncDec::A => {
                         self.registers.a = self.registers.a.wrapping_add(1);
@@ -212,27 +221,36 @@ impl CPU {
                     TargetIncDec::BC => {
                         self.registers
                             .set_bc(self.registers.get_bc().wrapping_add(1));
+                        cycles = 8;
                     }
                     TargetIncDec::DE => {
                         self.registers
                             .set_de(self.registers.get_de().wrapping_add(1));
+                        cycles = 8;
                     }
                     TargetIncDec::HL => {
                         self.registers
                             .set_hl(self.registers.get_hl().wrapping_add(1));
+                        cycles = 8;
                     }
                     TargetIncDec::SP => {
                         self.registers.sp = self.registers.sp.wrapping_add(1);
+                        cycles = 8;
                     }
                     TargetIncDec::HLPOINTER => {
                         let address = self.registers.get_hl();
                         let byte = self.address_bus.read_byte(address) - 1;
                         self.address_bus.write_byte(address, byte);
+                        cycles = 12;
                     }
                 }
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::DEC(target) => {
+                let mut cycles = 4;
                 match target {
                     TargetIncDec::A => {
                         self.registers.a = self.registers.a.wrapping_sub(1);
@@ -266,6 +284,7 @@ impl CPU {
                     TargetIncDec::HL => {
                         self.registers
                             .set_hl(self.registers.get_hl().wrapping_sub(1));
+                        cycles = 12;
                     }
 
                     _ => {
@@ -273,7 +292,10 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::LDU16(target) => {
                 match target {
@@ -296,7 +318,10 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(3)
+                Step {
+                    cycles: 12,
+                    pc: self.pc.wrapping_add(3),
+                }
             }
             Instruction::LDAPTR(target) => {
                 self.registers.a = match target {
@@ -305,18 +330,25 @@ impl CPU {
                     TargetPointer::HL => self.address_bus.read_byte(self.registers.get_hl()),
                 };
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
-            Instruction::XORR8(target) => match target {
-                TargetRegister8::A => {
-                    self.registers.a ^= self.registers.a;
-
-                    self.pc.wrapping_add(1)
+            Instruction::XORR8(target) => {
+                match target {
+                    TargetRegister8::A => {
+                        self.registers.a ^= self.registers.a;
+                    }
+                    _ => {
+                        panic!("{:?} unimplemented XORR8", target);
+                    }
                 }
-                _ => {
-                    panic!("{:?} unimplemented XORR8", target);
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
                 }
-            },
+            }
             Instruction::LDU8(target) => {
                 let value = self.address_bus.read_byte(self.pc + 1);
 
@@ -344,20 +376,29 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(2)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(2),
+                }
             }
             Instruction::LDFF00CA => {
                 let address = 0xFF00 + self.registers.c as u16;
                 self.address_bus
                     .write_bytes(address, [self.registers.a].to_vec());
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::LDAFF00U8 => {
                 let address = 0xFF00 + self.address_bus.read_byte(self.pc + 1) as u16;
                 self.registers.a = self.address_bus.read_byte(address);
 
-                self.pc.wrapping_add(2)
+                Step {
+                    cycles: 12,
+                    pc: self.pc.wrapping_add(2),
+                }
             }
             Instruction::LDDHLA => {
                 let hl = self.registers.get_hl();
@@ -365,7 +406,10 @@ impl CPU {
                     .write_bytes(hl, [self.registers.a].to_vec());
                 self.registers.set_hl(hl - 1);
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::LDIHLA => {
                 let hl = self.registers.get_hl();
@@ -373,14 +417,20 @@ impl CPU {
                     .write_bytes(hl, [self.registers.a].to_vec());
                 self.registers.set_hl(hl + 1);
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::LDHLR8(target) => match target {
                 TargetRegister8::A => {
                     self.address_bus
                         .write_bytes(self.registers.get_hl(), [self.registers.a].to_vec());
 
-                    self.pc.wrapping_add(1)
+                    Step {
+                        cycles: 8,
+                        pc: self.pc.wrapping_add(1),
+                    }
                 }
                 _ => {
                     panic!("{:?} unimplemented LDHLR8 Instruction", target);
@@ -391,7 +441,10 @@ impl CPU {
                 self.address_bus
                     .write_bytes(address, [self.registers.a].to_vec());
 
-                self.pc.wrapping_add(2)
+                Step {
+                    cycles: 12,
+                    pc: self.pc.wrapping_add(2),
+                }
             }
             Instruction::PUSH(target) => {
                 self.registers.sp -= 2;
@@ -423,7 +476,10 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 16,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::POP(target) => {
                 match target {
@@ -447,58 +503,76 @@ impl CPU {
                 }
                 self.registers.sp += 2;
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 16,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
-            Instruction::BIT(bit, target) => match target {
-                TargetRegister8::H => {
-                    self.registers.flags.negative = false;
-                    self.registers.flags.half_carry = true;
+            Instruction::BIT(bit, target) => {
+                match target {
+                    TargetRegister8::H => {
+                        self.registers.flags.negative = false;
+                        self.registers.flags.half_carry = true;
 
-                    let check = 1 << bit;
-                    self.registers.flags.zero = self.registers.h & check == 0;
-
-                    self.pc.wrapping_add(2)
+                        let check = 1 << bit;
+                        self.registers.flags.zero = self.registers.h & check == 0;
+                    }
+                    _ => {
+                        panic!("{:?} unimplemented BIT Instruction", target);
+                    }
                 }
-                _ => {
-                    panic!("{:?} unimplemented BIT Instruction", target);
+                Step {
+                    cycles: 12,
+                    pc: self.pc.wrapping_add(2),
                 }
-            },
+            }
             Instruction::JP => {
                 let address = merge_bytes(
                     self.address_bus.read_byte(self.pc + 2),
                     self.address_bus.read_byte(self.pc + 1),
                 );
 
-                address
+                Step {
+                    cycles: 16,
+                    pc: address,
+                }
             }
             Instruction::JR => {
                 let offset = self.address_bus.read_byte(self.pc + 1) as i8;
 
-                self.pc.wrapping_add(2).wrapping_add(offset as u16)
+                Step {
+                    cycles: 12,
+                    pc: self.pc.wrapping_add(2).wrapping_add(offset as u16),
+                }
             }
-            Instruction::JRF(comparison) => match comparison {
-                Comparison::NONZERO => {
-                    if !self.registers.flags.zero {
-                        let offset = self.address_bus.read_byte(self.pc + 1) as i8;
+            Instruction::JRF(comparison) => {
+                // init assuming no branch
+                let mut pc = self.pc.wrapping_add(2);
+                let mut cycles = 8;
 
-                        self.pc.wrapping_add(2).wrapping_add(offset as u16)
-                    } else {
-                        self.pc.wrapping_add(2)
+                match comparison {
+                    Comparison::NONZERO => {
+                        if !self.registers.flags.zero {
+                            let offset = self.address_bus.read_byte(self.pc + 1) as i8;
+
+                            pc = self.pc.wrapping_add(2).wrapping_add(offset as u16);
+                            cycles = 12;
+                        }
+                    }
+                    Comparison::ZERO => {
+                        if self.registers.flags.zero {
+                            let offset = self.address_bus.read_byte(self.pc + 1) as i8;
+
+                            pc = self.pc.wrapping_add(2).wrapping_add(offset as u16);
+                            cycles = 12;
+                        }
+                    }
+                    _ => {
+                        panic!("{:?} unimplemented JRF Instruction", comparison);
                     }
                 }
-                Comparison::ZERO => {
-                    if self.registers.flags.zero {
-                        let offset = self.address_bus.read_byte(self.pc + 1) as i8;
-
-                        self.pc.wrapping_add(2).wrapping_add(offset as u16)
-                    } else {
-                        self.pc.wrapping_add(2)
-                    }
-                }
-                _ => {
-                    panic!("{:?} unimplemented JRF Instruction", comparison);
-                }
-            },
+                Step { cycles, pc }
+            }
             Instruction::LDR8U8(target) => {
                 let byte = self.address_bus.read_byte(self.pc + 1);
                 match target {
@@ -525,7 +599,10 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(2)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(2),
+                }
             }
             Instruction::LDR8R8(target, source) => {
                 match target {
@@ -608,7 +685,10 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::LDU16A => {
                 let address = merge_bytes(
@@ -618,9 +698,13 @@ impl CPU {
                 self.address_bus
                     .write_bytes(address, [self.registers.a].to_vec());
 
-                self.pc.wrapping_add(3)
+                Step {
+                    cycles: 16,
+                    pc: self.pc.wrapping_add(3),
+                }
             }
             Instruction::RL(target) => {
+                let cycles = 8;
                 self.registers.flags.half_carry = false;
                 self.registers.flags.negative = false;
                 match target {
@@ -641,7 +725,10 @@ impl CPU {
                     }
                 }
 
-                self.pc.wrapping_add(2)
+                Step {
+                    cycles,
+                    pc: self.pc.wrapping_add(2),
+                }
             }
             Instruction::RLA => {
                 self.registers.flags.half_carry = false;
@@ -658,7 +745,10 @@ impl CPU {
 
                 self.registers.a = new_a;
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 4,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::CPU8 => {
                 let byte = self.address_bus.read_byte(self.pc + 1);
@@ -669,7 +759,10 @@ impl CPU {
                 self.registers.flags.carry = a < byte;
                 self.registers.flags.half_carry = bytes_half_carry(a, byte);
 
-                self.pc.wrapping_add(2)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(2),
+                }
             }
             Instruction::CPHL => {
                 let hl = self.registers.get_hl();
@@ -681,7 +774,10 @@ impl CPU {
                 self.registers.flags.carry = a < byte;
                 self.registers.flags.half_carry = bytes_half_carry(a, byte);
 
-                self.pc.wrapping_add(1)
+                Step {
+                    cycles: 8,
+                    pc: self.pc.wrapping_add(1),
+                }
             }
             Instruction::CALL => {
                 self.registers.sp -= 2;
@@ -692,7 +788,7 @@ impl CPU {
                 let upper = self.address_bus.read_byte(self.pc + 2);
                 let pc = merge_bytes(upper, lower);
 
-                pc
+                Step { cycles: 24, pc }
             }
             Instruction::RET => {
                 let pc = merge_bytes(
@@ -701,7 +797,7 @@ impl CPU {
                 );
                 self.registers.sp += 2;
 
-                pc
+                Step { cycles: 16, pc }
             }
             _ => {
                 panic!(
@@ -712,7 +808,7 @@ impl CPU {
         }
     }
 
-    pub fn step(&mut self) -> bool {
+    pub fn step(&mut self) -> u32 {
         let mut instruction_byte = self.address_bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == INSTRUCTION_PREFIX_BYTE;
@@ -724,10 +820,11 @@ impl CPU {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
         if instruction == Instruction::NOP {
-            return false;
+            return 1000;
         }
-        self.pc = self.execute(instruction);
-        true
+        let step = self.execute(instruction);
+        self.pc = step.pc;
+        step.cycles as u32
     }
 
     fn add(&mut self, value: u8, carry: bool) -> u8 {
