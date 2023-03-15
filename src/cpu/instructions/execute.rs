@@ -1,22 +1,17 @@
+use super::*;
+use crate::cpu::CPU;
 use bitwise::Bitwise;
 use control::Control;
 use jump::Jump;
 use load::Load;
 use logic::Logic;
-use super::*;
-use crate::cpu::CPU;
-
-pub struct Executed {
-    pub cycles_used: u8,
-    pub next_pc: u16,
-}
 
 pub trait Execution {
-    fn execute(&self, cpu: &mut CPU) -> Executed;
+    fn execute(&self, cpu: &mut CPU) -> u8;
 }
 
 impl Execution for Instruction {
-    fn execute(&self, cpu: &mut CPU) -> Executed {
+    fn execute(&self, cpu: &mut CPU) -> u8 {
         match self {
             Instruction::NOP => cpu.nop(),
             Instruction::ADCR8(target) => cpu.adc_r8(target),

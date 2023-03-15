@@ -1,14 +1,30 @@
-use super::{execute::Executed, TargetRegister8};
+use super::TargetRegister8;
 use crate::cpu::CPU;
 
 pub trait Bitwise {
-    fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> Executed;
-    fn rla(&mut self) -> Executed;
-    fn rl(&mut self, target: &TargetRegister8) -> Executed;
+    fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> u8;
+    fn rla(&mut self) -> u8;
+    fn rl(&mut self, target: &TargetRegister8) -> u8;
 }
 
 impl Bitwise for CPU {
-    fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> Executed {
+    // BIT 2,B - 0x50
+    // Length: 2 bytes
+    // FlagsZero	dependent
+    // Negative	unset
+    // Half Carry	set
+    // Carry	unmodified
+    // Group: x8/rsb
+    // Timingwithout branch (8t)
+    // fetch	(0xCB)
+    // fetch
+    fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> u8 {
+        let next_pc = self.pc.wrapping_add(2);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //fetch
         match target {
             TargetRegister8::H => {
                 self.registers.flags.negative = false;
@@ -21,11 +37,10 @@ impl Bitwise for CPU {
                 panic!("{:?} unimplemented BIT Instruction", target);
             }
         }
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used: 12,
-            next_pc: self.pc.wrapping_add(2),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
     // RL C - 0x11
@@ -38,27 +53,20 @@ impl Bitwise for CPU {
     // Timingwithout branch (8t)
     // fetch	(0xCB)
     // fetch
-    fn rl(&mut self, target: &TargetRegister8) -> Executed {
+    fn rl(&mut self, target: &TargetRegister8) -> u8 {
         let next_pc = self.pc.wrapping_add(2);
 
         //fetch
         let mut cycles_used = self.sync();
 
         //fetch
-        cycles_used += self.sync();
-
-        self.registers.flags.half_carry = false;
-        self.registers.flags.negative = false;
         match target {
             TargetRegister8::C => {
                 let mut new_c = self.registers.c << 1;
-
                 if self.registers.flags.carry {
                     new_c |= 1;
                 }
-
                 self.registers.flags.carry = self.registers.c >> 7 == 1;
-
                 self.registers.flags.zero = new_c == 0;
                 self.registers.c = new_c;
             }
@@ -66,11 +74,12 @@ impl Bitwise for CPU {
                 panic!("{:?} unimplemented RL Instruction", target);
             }
         }
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used,
-            next_pc,
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
     // RLA - 0x17
@@ -82,29 +91,22 @@ impl Bitwise for CPU {
     // Group: x8/rsb
     // Timingwithout branch (4t)
     // fetch
-    fn rla(&mut self) -> Executed {
+    fn rla(&mut self) -> u8 {
         let next_pc = self.pc.wrapping_add(1);
 
         //fetch
-        let cycles_used = self.sync();
-
-        self.registers.flags.half_carry = false;
-        self.registers.flags.negative = false;
-        self.registers.flags.zero = false;
-
         let mut new_a = self.registers.a << 1;
-
         if self.registers.flags.carry {
             new_a |= 1;
         }
-
         self.registers.flags.carry = self.registers.a >> 7 == 1;
-
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = false;
         self.registers.a = new_a;
+        let cycles_used = self.sync();
 
-        Executed {
-            cycles_used,
-            next_pc,
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 }

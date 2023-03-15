@@ -1,262 +1,423 @@
-use super::{execute::Executed, *};
+use super::*;
 use crate::cpu::{FlagsRegister, CPU};
 use crate::utils::*;
 
 pub trait Load {
-    fn ld_hl_r8(&mut self, target: &TargetRegister8) -> Executed;
-    fn ldi_a_hl(&mut self) -> Executed;
-    fn ldi_hl_a(&mut self) -> Executed;
-    fn ld_ff00u8_a(&mut self) -> Executed;
-    fn ld_a_ff00u8(&mut self) -> Executed;
-    fn ld_ff00c_a(&mut self) -> Executed;
-    fn ld_u8(&mut self, target: &TargetRegister8) -> Executed;
-    fn ld_a_ptr(&mut self, target: &TargetPointer) -> Executed;
-    fn ld_u16(&mut self, target: &TargetRegister16) -> Executed;
-    fn pop(&mut self, target: &TargetPushPop) -> Executed;
-    fn push(&mut self, target: &TargetPushPop) -> Executed;
-    fn ld_r8_u8(&mut self, target: &TargetRegister8) -> Executed;
-    fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> Executed;
-    fn ld_u16_a(&mut self) -> Executed;
+    fn ld_hl_r8(&mut self, target: &TargetRegister8) -> u8;
+    fn ldi_a_hl(&mut self) -> u8;
+    fn ldi_hl_a(&mut self) -> u8;
+    fn ld_ff00u8_a(&mut self) -> u8;
+    fn ld_a_ff00u8(&mut self) -> u8;
+    fn ld_ff00c_a(&mut self) -> u8;
+    fn ld_u8(&mut self, target: &TargetRegister8) -> u8;
+    fn ld_a_ptr(&mut self, target: &TargetPointer) -> u8;
+    fn ld_u16(&mut self, target: &TargetRegister16) -> u8;
+    fn pop(&mut self, target: &TargetPushPop) -> u8;
+    fn push(&mut self, target: &TargetPushPop) -> u8;
+    fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8;
+    fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8;
+    fn ld_u16_a(&mut self) -> u8;
 }
 
 impl Load for CPU {
-    fn ld_hl_r8(&mut self, target: &TargetRegister8) -> Executed {
+    // LD (HL),B - 0x70
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // write	B->(HL)
+    fn ld_hl_r8(&mut self, target: &TargetRegister8) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //write
         match target {
             TargetRegister8::A => {
-                self.write_bytes(self.registers.get_hl(), [self.registers.a].to_vec());
-
-                Executed {
-                    cycles_used: 8,
-                    next_pc: self.pc.wrapping_add(1),
-                }
+                self.write_byte(self.registers.get_hl(), self.registers.a);
             }
             _ => {
                 panic!("{:?} unimplemented LDHLR8 Instruction", target);
             }
         }
+        cycles_used += self.sync();
+
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ldi_a_hl(&mut self) -> Executed {
+    // LD A,(HL+) - 0x2A
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // read	(HL++)->A
+    fn ldi_a_hl(&mut self) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
         let hl = self.registers.get_hl();
         self.write_bytes(hl, [self.registers.a].to_vec());
         self.registers.set_hl(hl - 1);
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used: 8,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ldi_hl_a(&mut self) -> Executed {
+    // LD (HL+),A - 0x22
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // write	A->(HL++)
+    fn ldi_hl_a(&mut self) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //write
         let hl = self.registers.get_hl();
-        self.write_bytes(hl, [self.registers.a].to_vec());
-        self.registers.set_hl(hl + 1);
+        self.write_byte(hl, self.registers.a);
+        self.registers.set_hl(hl.wrapping_add(1));
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used: 8,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_ff00u8_a(&mut self) -> Executed {
-        let address = 0xFF00 + self.read_byte(self.pc + 1) as u16;
-        self.write_bytes(address, [self.registers.a].to_vec());
+    // LD (FF00+u8),A - 0xE0
+    // Length: 2 bytes
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (12t)
+    // fetch
+    // read	u8
+    // write	A->(FF00+u8)
+    fn ld_ff00u8_a(&mut self) -> u8 {
+        let next_pc = self.pc.wrapping_add(2);
 
-        Executed {
-            cycles_used: 12,
-            next_pc: self.pc.wrapping_add(2),
-        }
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let address = 0xFF00 + self.read_byte_lower() as u16;
+
+        //write
+        self.write_byte(address, self.registers.a);
+        cycles_used += self.sync();
+
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_a_ff00u8(&mut self) -> Executed {
-        let address = 0xFF00 + self.read_byte(self.pc + 1) as u16;
+    // LD A,(FF00+u8) - 0xF0
+    // Length: 2 bytes
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (12t)
+    // fetch
+    // read	u8
+    // read	(FF00+u8)->A
+    fn ld_a_ff00u8(&mut self) -> u8 {
+        let next_pc = self.pc.wrapping_add(2);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let address = 0xFF00 + self.read_byte_lower() as u16;
+        cycles_used += self.sync();
+
+        //read
         self.registers.a = self.read_byte(address);
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used: 12,
-            next_pc: self.pc.wrapping_add(2),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_ff00c_a(&mut self) -> Executed {
+    // LD (FF00+C),A - 0xE2
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // write	A->(FF00+C)
+    fn ld_ff00c_a(&mut self) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //write
         let address = 0xFF00 + self.registers.c as u16;
-        self.write_bytes(address, [self.registers.a].to_vec());
+        self.write_byte(address, self.registers.a);
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used: 8,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_u8(&mut self, target: &TargetRegister8) -> Executed {
-        let value = self.read_byte(self.pc + 1);
+    // LD B,u8 - 0x06
+    // Length: 2 bytes
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // read	u8->B
+    fn ld_u8(&mut self, target: &TargetRegister8) -> u8 {
+        let next_pc = self.pc.wrapping_add(2);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let value = self.read_byte_lower();
+        cycles_used += self.sync();
 
         match target {
-            TargetRegister8::A => {
-                self.registers.a = value;
-            }
-            TargetRegister8::B => {
-                self.registers.b = value;
-            }
-            TargetRegister8::C => {
-                self.registers.c = value;
-            }
-            TargetRegister8::D => {
-                self.registers.d = value;
-            }
-            TargetRegister8::E => {
-                self.registers.e = value;
-            }
-            TargetRegister8::H => {
-                self.registers.h = value;
-            }
-            TargetRegister8::L => {
-                self.registers.l = value;
-            }
+            TargetRegister8::A => self.registers.a = value,
+            TargetRegister8::B => self.registers.b = value,
+            TargetRegister8::C => self.registers.c = value,
+            TargetRegister8::D => self.registers.d = value,
+            TargetRegister8::E => self.registers.e = value,
+            TargetRegister8::H => self.registers.h = value,
+            TargetRegister8::L => self.registers.l = value,
         }
 
-        Executed {
-            cycles_used: 8,
-            next_pc: self.pc.wrapping_add(2),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_a_ptr(&mut self, target: &TargetPointer) -> Executed {
+    // LD A,(BC) - 0x0A
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // read	(BC)->A
+    fn ld_a_ptr(&mut self, target: &TargetPointer) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
         self.registers.a = match target {
             TargetPointer::BC => self.read_byte(self.registers.get_bc()),
             TargetPointer::DE => self.read_byte(self.registers.get_de()),
             TargetPointer::HL => self.read_byte(self.registers.get_hl()),
         };
+        cycles_used += self.sync();
 
-        Executed {
-            cycles_used: 8,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_u16(&mut self, target: &TargetRegister16) -> Executed {
+    // LD BC,u16 - 0x01
+    // Length: 3 bytes
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x16/lsm
+    // Timingwithout branch (12t)
+    // fetch
+    // read	u16:lower->C
+    // read	u16:upper->B
+    fn ld_u16(&mut self, target: &TargetRegister16) -> u8 {
+        let next_pc = self.pc.wrapping_add(3);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read lower
+        let lower = self.read_byte_lower();
+        cycles_used += self.sync();
+
+        //read upper
+        let upper = self.read_byte_upper();
+        cycles_used += self.sync();
+
         match target {
             TargetRegister16::SP => {
-                let lower = self.read_byte(self.pc + 1);
-                let upper = self.read_byte(self.pc + 2);
-
                 self.registers.set_sp(upper, lower);
             }
             TargetRegister16::HL => {
-                self.registers.l = self.read_byte(self.pc + 1);
-                self.registers.h = self.read_byte(self.pc + 2);
+                self.registers.l = lower;
+                self.registers.h = upper;
             }
             TargetRegister16::DE => {
-                self.registers.e = self.read_byte(self.pc + 1);
-                self.registers.d = self.read_byte(self.pc + 2);
+                self.registers.e = lower;
+                self.registers.d = upper;
             }
             _ => {
                 panic!("{:?} unimplemented LDU16", target);
             }
         }
 
-        Executed {
-            cycles_used: 12,
-            next_pc: self.pc.wrapping_add(3),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn push(&mut self, target: &TargetPushPop) -> Executed {
-        self.registers.sp -= 2;
+    // PUSH BC - 0xC5
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x16/lsm
+    // Timingwithout branch (16t)
+    // fetch
+    // internal
+    // write	B->(--SP)
+    // write	C->(--SP)
+    fn push(&mut self, target: &TargetPushPop) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
 
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //internal
+        cycles_used += self.sync();
+
+        //write write
+        cycles_used += match target {
+            TargetPushPop::AF => self._push(self.registers.a, self.registers.get_f()),
+            TargetPushPop::HL => self._push(self.registers.h, self.registers.l),
+            TargetPushPop::BC => self._push(self.registers.b, self.registers.c),
+            TargetPushPop::DE => self._push(self.registers.d, self.registers.e),
+        };
+
+        self.pc = next_pc;
+        cycles_used
+    }
+
+    // POP BC - 0xC1
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x16/lsm
+    // Timingwithout branch (12t)
+    // fetch
+    // read	(SP++)->C
+    // read	(SP++)->B
+    fn pop(&mut self, target: &TargetPushPop) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read read
+        let (upper, lower, used) = self._pop();
+        cycles_used += used;
         match target {
             TargetPushPop::AF => {
-                self.write_bytes(
-                    self.registers.sp,
-                    [self.registers.get_f(), self.registers.a].to_vec(),
-                );
+                self.registers.a = upper;
+                self.registers.flags = FlagsRegister::from(lower);
             }
             TargetPushPop::HL => {
-                self.write_bytes(
-                    self.registers.sp,
-                    [self.registers.l, self.registers.h].to_vec(),
-                );
+                self.registers.h = upper;
+                self.registers.l = lower;
             }
             TargetPushPop::BC => {
-                self.write_bytes(
-                    self.registers.sp,
-                    [self.registers.c, self.registers.b].to_vec(),
-                );
+                self.registers.b = upper;
+                self.registers.c = lower;
             }
             TargetPushPop::DE => {
-                self.write_bytes(
-                    self.registers.sp,
-                    [self.registers.e, self.registers.d].to_vec(),
-                );
+                self.registers.d = upper;
+                self.registers.e = lower;
             }
-        }
+        };
 
-        Executed {
-            cycles_used: 16,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn pop(&mut self, target: &TargetPushPop) -> Executed {
+    // LD D,u8 - 0x16
+    // Length: 2 bytes
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (8t)
+    // fetch
+    // read	u8->D
+    fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8 {
+        let next_pc = self.pc.wrapping_add(2);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let byte = self.read_byte_lower();
+        cycles_used += self.sync();
+
         match target {
-            TargetPushPop::AF => {
-                self.registers.a = self.read_byte(self.registers.sp + 1);
-                self.registers.flags = FlagsRegister::from(self.read_byte(self.registers.sp));
-            }
-            TargetPushPop::HL => {
-                self.registers.h = self.read_byte(self.registers.sp + 1);
-                self.registers.l = self.read_byte(self.registers.sp);
-            }
-            TargetPushPop::BC => {
-                self.registers.b = self.read_byte(self.registers.sp + 1);
-                self.registers.c = self.read_byte(self.registers.sp);
-            }
-            TargetPushPop::DE => {
-                self.registers.d = self.read_byte(self.registers.sp + 1);
-                self.registers.e = self.read_byte(self.registers.sp);
-            }
+            TargetRegister8::A => self.registers.a = byte,
+            TargetRegister8::B => self.registers.b = byte,
+            TargetRegister8::C => self.registers.c = byte,
+            TargetRegister8::D => self.registers.d = byte,
+            TargetRegister8::E => self.registers.e = byte,
+            TargetRegister8::H => self.registers.h = byte,
+            TargetRegister8::L => self.registers.l = byte,
         }
-        self.registers.sp += 2;
 
-        Executed {
-            cycles_used: 16,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
 
-    fn ld_r8_u8(&mut self, target: &TargetRegister8) -> Executed {
-        let byte = self.read_byte(self.pc + 1);
-        match target {
-            TargetRegister8::A => {
-                self.registers.a = byte;
-            }
-            TargetRegister8::B => {
-                self.registers.b = byte;
-            }
-            TargetRegister8::C => {
-                self.registers.c = byte;
-            }
-            TargetRegister8::D => {
-                self.registers.d = byte;
-            }
-            TargetRegister8::E => {
-                self.registers.e = byte;
-            }
-            TargetRegister8::H => {
-                self.registers.h = byte;
-            }
-            TargetRegister8::L => {
-                self.registers.l = byte;
-            }
-        }
+    // LD B,B - 0x40
+    // Length: 1 byte
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (4t)
+    // fetch
+    fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8 {
+        let next_pc = self.pc.wrapping_add(1);
 
-        Executed {
-            cycles_used: 8,
-            next_pc: self.pc.wrapping_add(2),
-        }
-    }
+        //fetch
+        let cycles_used = self.sync();
 
-    fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> Executed {
         match target {
             TargetRegister8::A => {
                 self.registers.a = match source {
@@ -337,18 +498,71 @@ impl Load for CPU {
             }
         }
 
-        Executed {
-            cycles_used: 4,
-            next_pc: self.pc.wrapping_add(1),
-        }
+        self.pc = next_pc;
+        cycles_used
     }
-    fn ld_u16_a(&mut self) -> Executed {
-        let address = merge_bytes(self.read_byte(self.pc + 2), self.read_byte(self.pc + 1));
-        self.write_bytes(address, [self.registers.a].to_vec());
 
-        Executed {
-            cycles_used: 16,
-            next_pc: self.pc.wrapping_add(3),
-        }
+    // LD (u16),A - 0xEA
+    // Length: 3 bytes
+    // FlagsZero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timingwithout branch (16t)
+    // fetch
+    // read	u16:lower
+    // read	u16:upper
+    // write	A->(u16)
+    fn ld_u16_a(&mut self) -> u8 {
+        let next_pc = self.pc.wrapping_add(3);
+
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read lower
+        let lower = self.read_byte_lower();
+        cycles_used += self.sync();
+
+        //read upper
+        let upper = self.read_byte_lower();
+        cycles_used += self.sync();
+
+        //write
+        let address = merge_bytes(upper, lower);
+        self.write_byte(address, self.registers.a);
+
+        self.pc = next_pc;
+        cycles_used
+    }
+}
+
+impl CPU {
+    fn _push(&mut self, upper: u8, lower: u8) -> u8 {
+        //write
+        self.registers.sp -= 1;
+        self.write_byte(self.registers.sp, upper);
+        let mut cycles_used = self.sync();
+
+        //write
+        self.registers.sp -= 1;
+        self.write_byte(self.registers.sp, lower);
+        cycles_used += self.sync();
+
+        cycles_used
+    }
+
+    fn _pop(&mut self) -> (u8, u8, u8) {
+        //read
+        let lower = self.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+        let mut cycles_used = self.sync();
+
+        //read
+        let upper = self.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+        cycles_used += self.sync();
+
+        (upper, lower, cycles_used)
     }
 }

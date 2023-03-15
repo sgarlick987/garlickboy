@@ -64,7 +64,7 @@ impl Emu {
         let mut cycles_used = 0;
         while cycles_used < MAX_CYCLES {
             let cycles = self.cpu.step();
-            cycles_used += cycles;
+            cycles_used += cycles as u32;
         }
         self.cpu.render();
         self.fps_manager.delay();

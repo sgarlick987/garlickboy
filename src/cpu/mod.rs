@@ -37,6 +37,14 @@ impl CPU {
         self.address_bus.read_byte(address)
     }
 
+    pub fn read_byte_lower(&mut self) -> u8 {
+        self.read_byte(self.pc.wrapping_add(1))
+    }
+
+    pub fn read_byte_upper(&mut self) -> u8 {
+        self.read_byte(self.pc.wrapping_add(2))
+    }
+
     pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
         self.address_bus.write_bytes(address, bytes);
     }
@@ -45,7 +53,7 @@ impl CPU {
         4
     }
 
-    pub fn step(&mut self) -> u32 {
+    pub fn step(&mut self) -> u8 {
         let mut instruction_byte = self.address_bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == BYTE_PREFIX;
@@ -57,10 +65,8 @@ impl CPU {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
         if instruction == Instruction::NOP {
-            return 1000;
+            return 255;
         }
-        let execution = instruction.execute(self);
-        self.pc = execution.next_pc;
-        execution.cycles_used as u32
+        instruction.execute(self)
     }
 }
