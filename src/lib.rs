@@ -5,3 +5,4 @@ pub mod cpu;
 pub mod emu;
 pub mod gpu;
 pub mod rom;
+pub mod utils;

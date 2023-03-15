@@ -1,5 +1,12 @@
-pub const INSTRUCTION_PREFIX_BYTE: u8 = 0xCB;
-pub const UNASSIGNED_INSTRUCTION_BYTES: [u8; 11] = [
+pub mod bitwise;
+pub mod control;
+pub mod execute;
+pub mod jump;
+pub mod load;
+pub mod logic;
+
+pub const BYTE_PREFIX: u8 = 0xCB;
+pub const UNASSINGED_BYTES: [u8; 11] = [
     0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD,
 ];
 

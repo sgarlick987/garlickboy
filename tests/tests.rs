@@ -12,12 +12,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_from_byte_not_prefixed_prefix_byte_panic() {
-        Instruction::from_byte(INSTRUCTION_PREFIX_BYTE, false);
+        Instruction::from_byte(BYTE_PREFIX, false);
     }
 
     #[test]
     fn test_from_byte_not_prefixed_unassigned_op_bytes_panic() {
-        for byte in UNASSIGNED_INSTRUCTION_BYTES {
+        for byte in UNASSINGED_BYTES {
             let result = std::panic::catch_unwind(|| Instruction::from_byte(byte, false));
             assert!(result.is_err());
         }
@@ -36,9 +36,7 @@ mod tests {
     fn each_byte_has_unique_instruction(prefixed: bool) {
         let mut instructions: HashSet<Instruction> = HashSet::from([]);
         for byte in 0x00..0xFF {
-            if !prefixed
-                && (UNASSIGNED_INSTRUCTION_BYTES.contains(&byte) || INSTRUCTION_PREFIX_BYTE == byte)
-            {
+            if !prefixed && (UNASSINGED_BYTES.contains(&byte) || BYTE_PREFIX == byte) {
                 continue;
             }
             let i = Instruction::from_byte(byte, prefixed);
