@@ -25,8 +25,6 @@ impl Logic for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn xor_r8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         self.registers.a ^= match target {
             TargetRegister8::A => self.registers.a,
@@ -42,9 +40,8 @@ impl Logic for CPU {
         self.registers.flags.half_carry = false;
         self.registers.flags.carry = false;
 
-        self.pc = next_pc;
-        let cycles_used = self.sync();
-        cycles_used
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
     }
 
     // CP A,u8 - 0xFE
@@ -58,20 +55,18 @@ impl Logic for CPU {
     // fetch
     // read	u8
     fn cp_u8(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read
-        let byte = self.read_byte_lower();
+        let byte = self.read_byte_pc_lower();
         let a = self.registers.a;
         self.registers.flags.negative = true;
         self.registers.flags.zero = a == byte;
         self.registers.flags.carry = a < byte;
         self.registers.flags.half_carry = bytes_half_carry(a, byte);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -87,8 +82,6 @@ impl Logic for CPU {
     // fetch
     // read	(HL)
     fn cp_hl(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -101,7 +94,7 @@ impl Logic for CPU {
         self.registers.flags.carry = a < byte;
         self.registers.flags.half_carry = bytes_half_carry(a, byte);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -131,8 +124,6 @@ impl Logic for CPU {
     //TODO: fix r16 timing
     //TODO: r8 sync before or after set
     fn inc(&mut self, target: &TargetIncDec) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         let mut cycles_used = 0;
 
         match target {
@@ -220,7 +211,7 @@ impl Logic for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used
     }
 
@@ -249,8 +240,6 @@ impl Logic for CPU {
     //TODO: fix r16 timing
     //TODO: r8 sync before or after set
     fn dec(&mut self, target: &TargetIncDec) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = 0;
 
@@ -301,7 +290,7 @@ impl Logic for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used
     }
 
@@ -316,8 +305,6 @@ impl Logic for CPU {
     // fetch
     // read	(HL)
     fn add_hl(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -326,7 +313,7 @@ impl Logic for CPU {
         let byte = self.read_byte(hl);
         self.registers.a = self._add(byte, false);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -341,8 +328,6 @@ impl Logic for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn sub_r8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         self.registers.a = match target {
             TargetRegister8::A => self._sub(self.registers.a, false),
@@ -354,9 +339,8 @@ impl Logic for CPU {
             TargetRegister8::L => self._sub(self.registers.l, false),
         };
 
-        self.pc = next_pc;
-        let cycles_used = self.sync();
-        cycles_used
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
     }
 
     // ADD A,B - 0x80
@@ -369,8 +353,6 @@ impl Logic for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn add_r8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         self.registers.a = match target {
             TargetRegister8::A => self._add(self.registers.a, false),
@@ -382,9 +364,8 @@ impl Logic for CPU {
             TargetRegister8::L => self._add(self.registers.l, false),
         };
 
-        self.pc = next_pc;
-        let cycles_used = self.sync();
-        cycles_used
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
     }
 
     // ADC A,B - 0x88
@@ -397,8 +378,6 @@ impl Logic for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn adc_r8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         self.registers.a = match target {
             TargetRegister8::A => self._add(self.registers.a, self.registers.flags.carry),
@@ -410,9 +389,8 @@ impl Logic for CPU {
             TargetRegister8::L => self._add(self.registers.l, self.registers.flags.carry),
         };
 
-        self.pc = next_pc;
-        let cycles_used = self.sync();
-        cycles_used
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
     }
 }
 

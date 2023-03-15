@@ -17,7 +17,6 @@ impl Control for CPU {
     fn nop(&mut self) -> u8 {
         //fetch
         self.pc = self.pc.wrapping_add(1);
-        let cycles_used = self.sync();
-        cycles_used
+        self.sync()
     }
 }

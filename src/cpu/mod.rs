@@ -37,11 +37,11 @@ impl CPU {
         self.address_bus.read_byte(address)
     }
 
-    pub fn read_byte_lower(&mut self) -> u8 {
+    pub fn read_byte_pc_lower(&mut self) -> u8 {
         self.read_byte(self.pc.wrapping_add(1))
     }
 
-    pub fn read_byte_upper(&mut self) -> u8 {
+    pub fn read_byte_pc_upper(&mut self) -> u8 {
         self.read_byte(self.pc.wrapping_add(2))
     }
 

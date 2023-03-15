@@ -28,11 +28,11 @@ impl Jump for CPU {
         let mut cycles_used = self.sync();
 
         //read lower
-        let lower = self.read_byte_lower();
+        let lower = self.read_byte_pc_lower();
         cycles_used += self.sync();
 
         //read upper
-        let upper = self.read_byte_upper();
+        let upper = self.read_byte_pc_upper();
         cycles_used += self.sync();
 
         //branch
@@ -59,7 +59,7 @@ impl Jump for CPU {
         let mut cycles_used = self.sync();
 
         //read
-        let offset = self.read_byte_lower() as i8;
+        let offset = self.read_byte_pc_lower() as i8;
         cycles_used += self.sync();
 
         //modify PC
@@ -86,36 +86,29 @@ impl Jump for CPU {
     //     modify PC
     fn jrf(&mut self, comparison: &Comparison) -> u8 {
         // init assuming no branch
-        let mut next_pc = self.pc.wrapping_add(2);
+        let next_pc = self.pc.wrapping_add(2);
 
         //fetch
         let mut cycles_used = self.sync();
 
         //read
-        let offset = self.read_byte_lower() as i8;
-        cycles_used += self.sync();
+        let offset = self.read_byte_pc_lower() as i8;
 
-        match comparison {
-            Comparison::NONZERO => {
-                if !self.registers.flags.zero {
-                    // modify pc
-                    next_pc = next_pc.wrapping_add(offset as u16);
-                    cycles_used += self.sync();
-                }
-            }
-            Comparison::ZERO => {
-                if self.registers.flags.zero {
-                    // modify pc
-                    next_pc = next_pc.wrapping_add(offset as u16);
-                    cycles_used += self.sync();
-                }
-            }
+        if match comparison {
+            Comparison::NONZERO => !self.registers.flags.zero,
+            Comparison::ZERO => self.registers.flags.zero,
             _ => {
                 panic!("{:?} unimplemented JRF Instruction", comparison);
             }
+        } {
+            cycles_used += self.sync();
+            self.pc = next_pc.wrapping_add(offset as u16);
+            cycles_used += self.sync();
+        } else {
+            self.pc = next_pc;
+            cycles_used += self.sync();
         }
 
-        self.pc = next_pc;
         cycles_used
     }
 
@@ -140,11 +133,11 @@ impl Jump for CPU {
         let mut cycles = self.sync();
 
         //read lower
-        let lower = self.read_byte_lower();
+        let lower = self.read_byte_pc_lower();
         cycles += self.sync();
 
         //read upper
-        let upper = self.read_byte_upper();
+        let upper = self.read_byte_pc_upper();
         cycles += self.sync();
 
         //branch

@@ -19,8 +19,6 @@ impl Bitwise for CPU {
     // fetch	(0xCB)
     // fetch
     fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -38,7 +36,7 @@ impl Bitwise for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -54,8 +52,6 @@ impl Bitwise for CPU {
     // fetch	(0xCB)
     // fetch
     fn rl(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -77,7 +73,7 @@ impl Bitwise for CPU {
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -92,8 +88,6 @@ impl Bitwise for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn rla(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut new_a = self.registers.a << 1;
         if self.registers.flags.carry {
@@ -104,9 +98,8 @@ impl Bitwise for CPU {
         self.registers.flags.negative = false;
         self.registers.flags.zero = false;
         self.registers.a = new_a;
-        let cycles_used = self.sync();
 
-        self.pc = next_pc;
-        cycles_used
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
     }
 }

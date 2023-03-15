@@ -31,8 +31,6 @@ impl Load for CPU {
     // fetch
     // write	B->(HL)
     fn ld_hl_r8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -46,7 +44,7 @@ impl Load for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -62,8 +60,6 @@ impl Load for CPU {
     // fetch
     // read	(HL++)->A
     fn ldi_a_hl(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -72,7 +68,7 @@ impl Load for CPU {
         self.write_bytes(hl, [self.registers.a].to_vec());
         self.registers.set_hl(hl - 1);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -88,8 +84,6 @@ impl Load for CPU {
     // fetch
     // write	A->(HL++)
     fn ldi_hl_a(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -98,7 +92,7 @@ impl Load for CPU {
         self.write_byte(hl, self.registers.a);
         self.registers.set_hl(hl.wrapping_add(1));
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -115,18 +109,16 @@ impl Load for CPU {
     // read	u8
     // write	A->(FF00+u8)
     fn ld_ff00u8_a(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read
-        let address = 0xFF00 + self.read_byte_lower() as u16;
+        let address = 0xFF00 + self.read_byte_pc_lower() as u16;
 
         //write
         self.write_byte(address, self.registers.a);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -143,19 +135,17 @@ impl Load for CPU {
     // read	u8
     // read	(FF00+u8)->A
     fn ld_a_ff00u8(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read
-        let address = 0xFF00 + self.read_byte_lower() as u16;
+        let address = 0xFF00 + self.read_byte_pc_lower() as u16;
         cycles_used += self.sync();
 
         //read
         self.registers.a = self.read_byte(address);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -171,8 +161,6 @@ impl Load for CPU {
     // fetch
     // write	A->(FF00+C)
     fn ld_ff00c_a(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -180,7 +168,7 @@ impl Load for CPU {
         let address = 0xFF00 + self.registers.c as u16;
         self.write_byte(address, self.registers.a);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -196,13 +184,11 @@ impl Load for CPU {
     // fetch
     // read	u8->B
     fn ld_u8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read
-        let value = self.read_byte_lower();
+        let value = self.read_byte_pc_lower();
         match target {
             TargetRegister8::A => self.registers.a = value,
             TargetRegister8::B => self.registers.b = value,
@@ -213,7 +199,7 @@ impl Load for CPU {
             TargetRegister8::L => self.registers.l = value,
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -229,8 +215,6 @@ impl Load for CPU {
     // fetch
     // read	(BC)->A
     fn ld_a_ptr(&mut self, target: &TargetPointer) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -241,7 +225,7 @@ impl Load for CPU {
             TargetPointer::HL => self.read_byte(self.registers.get_hl()),
         };
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -258,17 +242,15 @@ impl Load for CPU {
     // read	u16:lower->C
     // read	u16:upper->B
     fn ld_u16(&mut self, target: &TargetRegister16) -> u8 {
-        let next_pc = self.pc.wrapping_add(3);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read lower
-        let lower = self.read_byte_lower();
+        let lower = self.read_byte_pc_lower();
         cycles_used += self.sync();
 
         //read upper
-        let upper = self.read_byte_upper();
+        let upper = self.read_byte_pc_upper();
 
         match target {
             TargetRegister16::SP => {
@@ -287,7 +269,7 @@ impl Load for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(3);
         cycles_used += self.sync();
         cycles_used
     }
@@ -305,8 +287,6 @@ impl Load for CPU {
     // write	B->(--SP)
     // write	C->(--SP)
     fn push(&mut self, target: &TargetPushPop) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -337,7 +317,7 @@ impl Load for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -354,8 +334,6 @@ impl Load for CPU {
     // read	(SP++)->C
     // read	(SP++)->B
     fn pop(&mut self, target: &TargetPushPop) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         let mut cycles_used = self.sync();
 
@@ -378,7 +356,7 @@ impl Load for CPU {
             TargetPushPop::DE => self.registers.d = upper,
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -394,13 +372,11 @@ impl Load for CPU {
     // fetch
     // read	u8->D
     fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(2);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read
-        let byte = self.read_byte_lower();
+        let byte = self.read_byte_pc_lower();
 
         match target {
             TargetRegister8::A => self.registers.a = byte,
@@ -412,7 +388,7 @@ impl Load for CPU {
             TargetRegister8::L => self.registers.l = byte,
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
     }
@@ -427,8 +403,6 @@ impl Load for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
         match target {
             TargetRegister8::A => {
@@ -510,7 +484,7 @@ impl Load for CPU {
             }
         }
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(1);
         let cycles_used = self.sync();
         cycles_used
     }
@@ -528,24 +502,22 @@ impl Load for CPU {
     // read	u16:upper
     // write	A->(u16)
     fn ld_u16_a(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(3);
-
         //fetch
         let mut cycles_used = self.sync();
 
         //read lower
-        let lower = self.read_byte_lower();
+        let lower = self.read_byte_pc_lower();
         cycles_used += self.sync();
 
         //read upper
-        let upper = self.read_byte_lower();
+        let upper = self.read_byte_pc_lower();
         cycles_used += self.sync();
 
         //write
         let address = merge_bytes(upper, lower);
         self.write_byte(address, self.registers.a);
 
-        self.pc = next_pc;
+        self.pc = self.pc.wrapping_add(3);
         cycles_used += self.sync();
         cycles_used
     }
