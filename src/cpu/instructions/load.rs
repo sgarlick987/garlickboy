@@ -45,9 +45,9 @@ impl Load for CPU {
                 panic!("{:?} unimplemented LDHLR8 Instruction", target);
             }
         }
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -71,9 +71,9 @@ impl Load for CPU {
         let hl = self.registers.get_hl();
         self.write_bytes(hl, [self.registers.a].to_vec());
         self.registers.set_hl(hl - 1);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -97,9 +97,9 @@ impl Load for CPU {
         let hl = self.registers.get_hl();
         self.write_byte(hl, self.registers.a);
         self.registers.set_hl(hl.wrapping_add(1));
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -125,9 +125,9 @@ impl Load for CPU {
 
         //write
         self.write_byte(address, self.registers.a);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -154,9 +154,9 @@ impl Load for CPU {
 
         //read
         self.registers.a = self.read_byte(address);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -179,9 +179,9 @@ impl Load for CPU {
         //write
         let address = 0xFF00 + self.registers.c as u16;
         self.write_byte(address, self.registers.a);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -203,8 +203,6 @@ impl Load for CPU {
 
         //read
         let value = self.read_byte_lower();
-        cycles_used += self.sync();
-
         match target {
             TargetRegister8::A => self.registers.a = value,
             TargetRegister8::B => self.registers.b = value,
@@ -216,6 +214,7 @@ impl Load for CPU {
         }
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -241,9 +240,9 @@ impl Load for CPU {
             TargetPointer::DE => self.read_byte(self.registers.get_de()),
             TargetPointer::HL => self.read_byte(self.registers.get_hl()),
         };
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -270,7 +269,6 @@ impl Load for CPU {
 
         //read upper
         let upper = self.read_byte_upper();
-        cycles_used += self.sync();
 
         match target {
             TargetRegister16::SP => {
@@ -290,6 +288,7 @@ impl Load for CPU {
         }
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -315,14 +314,31 @@ impl Load for CPU {
         cycles_used += self.sync();
 
         //write write
-        cycles_used += match target {
-            TargetPushPop::AF => self._push(self.registers.a, self.registers.get_f()),
-            TargetPushPop::HL => self._push(self.registers.h, self.registers.l),
-            TargetPushPop::BC => self._push(self.registers.b, self.registers.c),
-            TargetPushPop::DE => self._push(self.registers.d, self.registers.e),
-        };
+        match target {
+            TargetPushPop::AF => {
+                self._push(self.registers.a);
+                cycles_used += self.sync();
+                self._push(self.registers.get_f());
+            }
+            TargetPushPop::HL => {
+                self._push(self.registers.h);
+                cycles_used += self.sync();
+                self._push(self.registers.l);
+            }
+            TargetPushPop::BC => {
+                self._push(self.registers.b);
+                cycles_used += self.sync();
+                self._push(self.registers.c);
+            }
+            TargetPushPop::DE => {
+                self._push(self.registers.d);
+                cycles_used += self.sync();
+                self._push(self.registers.e);
+            }
+        }
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -343,29 +359,27 @@ impl Load for CPU {
         //fetch
         let mut cycles_used = self.sync();
 
-        //read read
-        let (upper, lower, used) = self._pop();
-        cycles_used += used;
+        //read
+        let lower = self._pop();
         match target {
-            TargetPushPop::AF => {
-                self.registers.a = upper;
-                self.registers.flags = FlagsRegister::from(lower);
-            }
-            TargetPushPop::HL => {
-                self.registers.h = upper;
-                self.registers.l = lower;
-            }
-            TargetPushPop::BC => {
-                self.registers.b = upper;
-                self.registers.c = lower;
-            }
-            TargetPushPop::DE => {
-                self.registers.d = upper;
-                self.registers.e = lower;
-            }
-        };
+            TargetPushPop::AF => self.registers.flags = FlagsRegister::from(lower),
+            TargetPushPop::HL => self.registers.l = lower,
+            TargetPushPop::BC => self.registers.c = lower,
+            TargetPushPop::DE => self.registers.e = lower,
+        }
+        cycles_used += self.sync();
+
+        //read
+        let upper = self._pop();
+        match target {
+            TargetPushPop::AF => self.registers.a = upper,
+            TargetPushPop::HL => self.registers.h = upper,
+            TargetPushPop::BC => self.registers.b = upper,
+            TargetPushPop::DE => self.registers.d = upper,
+        }
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -387,7 +401,6 @@ impl Load for CPU {
 
         //read
         let byte = self.read_byte_lower();
-        cycles_used += self.sync();
 
         match target {
             TargetRegister8::A => self.registers.a = byte,
@@ -400,6 +413,7 @@ impl Load for CPU {
         }
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -416,8 +430,6 @@ impl Load for CPU {
         let next_pc = self.pc.wrapping_add(1);
 
         //fetch
-        let cycles_used = self.sync();
-
         match target {
             TargetRegister8::A => {
                 self.registers.a = match source {
@@ -499,6 +511,7 @@ impl Load for CPU {
         }
 
         self.pc = next_pc;
+        let cycles_used = self.sync();
         cycles_used
     }
 
@@ -533,36 +546,20 @@ impl Load for CPU {
         self.write_byte(address, self.registers.a);
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 }
 
 impl CPU {
-    fn _push(&mut self, upper: u8, lower: u8) -> u8 {
-        //write
-        self.registers.sp -= 1;
-        self.write_byte(self.registers.sp, upper);
-        let mut cycles_used = self.sync();
-
-        //write
-        self.registers.sp -= 1;
-        self.write_byte(self.registers.sp, lower);
-        cycles_used += self.sync();
-
-        cycles_used
+    fn _push(&mut self, byte: u8) {
+        self.registers.sp = self.registers.sp.wrapping_sub(1);
+        self.write_byte(self.registers.sp, byte);
     }
 
-    fn _pop(&mut self) -> (u8, u8, u8) {
-        //read
-        let lower = self.read_byte(self.registers.sp);
+    fn _pop(&mut self) -> u8 {
+        let byte = self.read_byte(self.registers.sp);
         self.registers.sp = self.registers.sp.wrapping_add(1);
-        let mut cycles_used = self.sync();
-
-        //read
-        let upper = self.read_byte(self.registers.sp);
-        self.registers.sp = self.registers.sp.wrapping_add(1);
-        cycles_used += self.sync();
-
-        (upper, lower, cycles_used)
+        byte
     }
 }

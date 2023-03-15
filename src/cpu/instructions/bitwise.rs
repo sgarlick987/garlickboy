@@ -37,9 +37,9 @@ impl Bitwise for CPU {
                 panic!("{:?} unimplemented BIT Instruction", target);
             }
         }
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -76,9 +76,9 @@ impl Bitwise for CPU {
         }
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 

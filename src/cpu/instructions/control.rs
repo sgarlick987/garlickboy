@@ -15,12 +15,9 @@ impl Control for CPU {
     // Timingwithout branch (4t)
     // fetch
     fn nop(&mut self) -> u8 {
-        let next_pc = self.pc.wrapping_add(1);
-
         //fetch
+        self.pc = self.pc.wrapping_add(1);
         let cycles_used = self.sync();
-
-        self.pc = next_pc;
         cycles_used
     }
 }

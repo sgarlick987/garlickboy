@@ -28,11 +28,11 @@ impl Jump for CPU {
         let mut cycles_used = self.sync();
 
         //read lower
-        let lower = self.read_byte(self.pc + 1);
+        let lower = self.read_byte_lower();
         cycles_used += self.sync();
 
         //read upper
-        let upper = self.read_byte(self.pc + 2);
+        let upper = self.read_byte_upper();
         cycles_used += self.sync();
 
         //branch
@@ -59,7 +59,7 @@ impl Jump for CPU {
         let mut cycles_used = self.sync();
 
         //read
-        let offset = self.read_byte(self.pc + 1) as i8;
+        let offset = self.read_byte_lower() as i8;
         cycles_used += self.sync();
 
         //modify PC
@@ -92,7 +92,7 @@ impl Jump for CPU {
         let mut cycles_used = self.sync();
 
         //read
-        let offset = self.read_byte(self.pc + 1) as i8;
+        let offset = self.read_byte_lower() as i8;
         cycles_used += self.sync();
 
         match comparison {
@@ -140,11 +140,11 @@ impl Jump for CPU {
         let mut cycles = self.sync();
 
         //read lower
-        let lower = self.read_byte(self.pc + 1);
+        let lower = self.read_byte_lower();
         cycles += self.sync();
 
         //read upper
-        let upper = self.read_byte(self.pc + 2);
+        let upper = self.read_byte_upper();
         cycles += self.sync();
 
         //branch
@@ -183,12 +183,12 @@ impl Jump for CPU {
 
         //read lower
         let lower = self.read_byte(self.registers.sp);
-        self.registers.sp += 1;
+        self.registers.sp = self.registers.sp.wrapping_add(1);
         cycles_used += self.sync();
 
         //read upper
         let upper = self.read_byte(self.registers.sp);
-        self.registers.sp += 1;
+        self.registers.sp = self.registers.sp.wrapping_add(1);
         cycles_used += self.sync();
 
         //set pc

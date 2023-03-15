@@ -41,9 +41,9 @@ impl Logic for CPU {
         self.registers.flags.negative = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.carry = false;
-        let cycles_used = self.sync();
 
         self.pc = next_pc;
+        let cycles_used = self.sync();
         cycles_used
     }
 
@@ -70,9 +70,9 @@ impl Logic for CPU {
         self.registers.flags.zero = a == byte;
         self.registers.flags.carry = a < byte;
         self.registers.flags.half_carry = bytes_half_carry(a, byte);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -100,9 +100,9 @@ impl Logic for CPU {
         self.registers.flags.zero = a == byte;
         self.registers.flags.carry = a < byte;
         self.registers.flags.half_carry = bytes_half_carry(a, byte);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -325,9 +325,9 @@ impl Logic for CPU {
         let hl = self.registers.get_hl();
         let byte = self.read_byte(hl);
         self.registers.a = self._add(byte, false);
-        cycles_used += self.sync();
 
         self.pc = next_pc;
+        cycles_used += self.sync();
         cycles_used
     }
 
@@ -353,9 +353,9 @@ impl Logic for CPU {
             TargetRegister8::H => self._sub(self.registers.h, false),
             TargetRegister8::L => self._sub(self.registers.l, false),
         };
-        let cycles_used = self.sync();
 
         self.pc = next_pc;
+        let cycles_used = self.sync();
         cycles_used
     }
 
@@ -381,9 +381,9 @@ impl Logic for CPU {
             TargetRegister8::H => self._add(self.registers.h, false),
             TargetRegister8::L => self._add(self.registers.l, false),
         };
-        let cycles_used = self.sync();
 
         self.pc = next_pc;
+        let cycles_used = self.sync();
         cycles_used
     }
 
@@ -409,9 +409,9 @@ impl Logic for CPU {
             TargetRegister8::H => self._add(self.registers.h, self.registers.flags.carry),
             TargetRegister8::L => self._add(self.registers.l, self.registers.flags.carry),
         };
-        let cycles_used = self.sync();
 
         self.pc = next_pc;
+        let cycles_used = self.sync();
         cycles_used
     }
 }

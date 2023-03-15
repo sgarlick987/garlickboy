@@ -58,7 +58,7 @@ impl CPU {
 
         let prefixed = instruction_byte == BYTE_PREFIX;
         if prefixed {
-            instruction_byte = self.address_bus.read_byte(self.pc + 1);
+            instruction_byte = self.address_bus.read_byte(self.pc.wrapping_add(1));
         }
         let instruction = Instruction::from_byte(instruction_byte, prefixed);
         if instruction == Instruction::UNIMPLEMENTED {
