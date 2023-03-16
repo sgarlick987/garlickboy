@@ -19,6 +19,9 @@ pub struct GPU {
     palette: Palette,
     pub scrollx: u8,
     pub scrolly: u8,
+    pub ly: u8,
+    pub cycle: u32,
+    pub lcd_on: bool,
 }
 
 // #[derive(Copy, Clone)]
@@ -153,6 +156,20 @@ impl Palette {
 }
 
 impl GPU {
+    pub fn sync(&mut self) {
+        if !self.lcd_on {
+            return;
+        }
+
+        self.cycle += 4;
+        if self.cycle == 456 {
+            self.cycle = 0;
+            self.ly += 1;
+        }
+        if self.ly == 154 {
+            self.ly = 0;
+        }
+    }
     pub fn new(screen: Screen) -> GPU {
         GPU {
             vram: [0; VRAM_SIZE],
@@ -160,10 +177,19 @@ impl GPU {
             palette: DEFAULT_PALETTE,
             scrollx: 0,
             scrolly: 0,
+            ly: 0,
+            cycle: 0,
+            lcd_on: false,
         }
     }
 
     pub fn render(&mut self) {
+        if !self.lcd_on {
+            self.screen.canvas.set_draw_color(Color::BLACK);
+            self.screen.canvas.clear();
+            self.screen.canvas.present();
+            return;
+        }
         for tile_index in 0u16..1024 {
             let col = (tile_index as u32) % 32;
             let row = (tile_index as u32) / 32;
@@ -219,9 +245,8 @@ impl GPU {
         self.palette = Palette::from(palette);
     }
 
-    pub fn write_vram(&mut self, address: usize, bytes: Vec<u8>) {
-        let end = address + bytes.len();
-        self.vram[address..end].copy_from_slice(bytes.as_slice());
+    pub fn write_vram(&mut self, address: usize, byte: u8) {
+        self.vram[address] = byte;
     }
 
     pub fn read_vram(&self, address: usize) -> u8 {

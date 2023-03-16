@@ -65,7 +65,7 @@ impl Load for CPU {
 
         //read
         let hl = self.registers.get_hl();
-        self.write_bytes(hl, [self.registers.a].to_vec());
+        self.write_byte(hl, self.registers.a);
         self.registers.set_hl(hl - 1);
 
         self.pc = self.pc.wrapping_add(1);

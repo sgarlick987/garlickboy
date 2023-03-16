@@ -46,10 +46,11 @@ impl CPU {
     }
 
     pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
-        self.address_bus.write_bytes(address, bytes);
+        self.address_bus.write_bytes(address as usize, bytes);
     }
 
     fn sync(&mut self) -> u8 {
+        self.address_bus.gpu.sync();
         4
     }
 
@@ -65,7 +66,7 @@ impl CPU {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
         if instruction == Instruction::NOP {
-            return 255;
+            return 20;
         }
         instruction.execute(self)
     }
