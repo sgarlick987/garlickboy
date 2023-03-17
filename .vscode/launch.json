@@ -6,9 +6,28 @@
     "configurations": [
         {
             "type": "lldb",
-            "sourceMap": {
-                "/mnt/c/Users/sgarl/repos/garlickboy/": "/home/sgarlick/repos/garlickboy"
+            "request": "launch",
+            "name": "Debug unit tests in library 'garlickboy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=garlickboy"
+                ],
+                "filter": {
+                    "name": "garlickboy",
+                    "kind": "lib"
+                }
             },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DISPLAY": "172.28.80.1:0"
+            }
+        },
+        {
+            "type": "lldb",
             "request": "launch",
             "name": "Debug executable 'garlickboy'",
             "cargo": {
@@ -22,17 +41,14 @@
                     "kind": "bin"
                 }
             },
-            "env": {
-                "DISPLAY": "172.20.32.1:0"
-            },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DISPLAY": "172.28.80.1:0"
+            }
         },
         {
             "type": "lldb",
-            "sourceMap": {
-                "/mnt/c/Users/sgarl/repos/garlickboy/": "/home/sgarlick/repos/garlickboy"
-            },
             "request": "launch",
             "name": "Debug unit tests in executable 'garlickboy'",
             "cargo": {
@@ -47,11 +63,33 @@
                     "kind": "bin"
                 }
             },
+            "args": [],
+            "cwd": "${workspaceFolder}",
             "env": {
-                "DISPLAY": "172.20.32.1:0"
+                "DISPLAY": "172.28.80.1:0"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'tests'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=tests",
+                    "--package=garlickboy"
+                ],
+                "filter": {
+                    "name": "tests",
+                    "kind": "test"
+                }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DISPLAY": "172.28.80.1:0"
+            }
         }
     ]
 }

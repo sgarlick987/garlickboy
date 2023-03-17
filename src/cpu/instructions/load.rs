@@ -524,14 +524,62 @@ impl Load for CPU {
 }
 
 impl CPU {
-    fn _push(&mut self, byte: u8) {
+    pub fn _push(&mut self, byte: u8) {
         self.registers.sp = self.registers.sp.wrapping_sub(1);
         self.write_byte(self.registers.sp, byte);
     }
 
-    fn _pop(&mut self) -> u8 {
+    pub fn _pop(&mut self) -> u8 {
         let byte = self.read_byte(self.registers.sp);
         self.registers.sp = self.registers.sp.wrapping_add(1);
         byte
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::address::*;
+
+    use super::*;
+
+    fn setup_cpu(cycles: u8) -> CPU {
+        let syncs = cycles / 4;
+        let mut bus = Box::new(MockBus::new());
+        bus.expect_sync().times(syncs as usize).return_const(());
+
+        CPU::new(bus)
+    }
+
+    #[test]
+    fn test_ld_r8_r8() {
+        const CYCLES: u8 = 4;
+        const LENGTH: u16 = 1;
+
+        let targets = [
+            TargetRegister8::A,
+            TargetRegister8::B,
+            TargetRegister8::C,
+            TargetRegister8::D,
+            TargetRegister8::E,
+            TargetRegister8::H,
+            TargetRegister8::L,
+        ];
+
+        for src in &targets {
+            for dst in &targets {
+                let mut cpu = setup_cpu(CYCLES);
+
+                cpu.set_register_from_enum(src, 0xFF);
+
+                cpu.ld_r8_r8(dst, src);
+
+                assert_eq!(cpu.pc, LENGTH);
+                assert_eq!(
+                    cpu.get_register_from_enum(dst),
+                    cpu.get_register_from_enum(src)
+                );
+            }
+        }
     }
 }

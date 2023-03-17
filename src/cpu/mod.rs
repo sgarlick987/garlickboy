@@ -11,30 +11,54 @@ use self::{
 
 pub struct CPU {
     registers: Registers,
-    address_bus: AddressBus,
+    bus: Box<dyn Bus>,
     pc: u16,
 }
 
 impl CPU {
-    pub fn new(address_bus: AddressBus) -> CPU {
+    pub fn new(bus: Box<dyn Bus>) -> CPU {
         let registers = registers::new_registers();
         CPU {
             registers,
-            address_bus,
+            bus,
             pc: 0,
         }
     }
 
+    pub fn get_register_from_enum(&mut self, target: &TargetRegister8) -> u8 {
+        match target {
+            TargetRegister8::A => self.registers.a,
+            TargetRegister8::B => self.registers.b,
+            TargetRegister8::C => self.registers.c,
+            TargetRegister8::D => self.registers.d,
+            TargetRegister8::E => self.registers.e,
+            TargetRegister8::H => self.registers.h,
+            TargetRegister8::L => self.registers.l,
+        }
+    }
+
+    pub fn set_register_from_enum(&mut self, target: &TargetRegister8, value: u8) {
+        match target {
+            TargetRegister8::A => self.registers.a = value,
+            TargetRegister8::B => self.registers.b = value,
+            TargetRegister8::C => self.registers.c = value,
+            TargetRegister8::D => self.registers.d = value,
+            TargetRegister8::E => self.registers.e = value,
+            TargetRegister8::H => self.registers.h = value,
+            TargetRegister8::L => self.registers.l = value,
+        }
+    }
+
     pub fn render(&mut self) {
-        self.address_bus.gpu.render();
+        self.bus.render();
     }
 
     pub fn write_byte(&mut self, address: u16, byte: u8) {
-        self.address_bus.write_byte(address, byte);
+        self.bus.write_byte(address, byte);
     }
 
     pub fn read_byte(&mut self, address: u16) -> u8 {
-        self.address_bus.read_byte(address)
+        self.bus.read_byte(address)
     }
 
     pub fn read_byte_pc_lower(&mut self) -> u8 {
@@ -46,20 +70,20 @@ impl CPU {
     }
 
     pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
-        self.address_bus.write_bytes(address as usize, bytes);
+        self.bus.write_bytes(address as usize, bytes);
     }
 
     fn sync(&mut self) -> u8 {
-        self.address_bus.gpu.sync();
+        self.bus.sync();
         4
     }
 
     pub fn step(&mut self) -> u8 {
-        let mut instruction_byte = self.address_bus.read_byte(self.pc);
+        let mut instruction_byte = self.bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == BYTE_PREFIX;
         if prefixed {
-            instruction_byte = self.address_bus.read_byte(self.pc.wrapping_add(1));
+            instruction_byte = self.bus.read_byte(self.pc.wrapping_add(1));
         }
         let instruction = Instruction::from_byte(instruction_byte, prefixed);
         if instruction == Instruction::UNIMPLEMENTED {

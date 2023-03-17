@@ -707,7 +707,7 @@ impl Instruction {
             0xC1 => Instruction::POP(TargetPushPop::BC),    // POP BC
             0xC2 => Instruction::JPF(Comparison::NONZERO),  // JP NZ, u16
             0xC3 => Instruction::JP,                        // JP u16
-            0xC4 => Instruction::CALLF(Comparison::NOCARRY), // CALL NC, u16
+            0xC4 => Instruction::CALLF(Comparison::NONZERO), // CALL NC, u16
             0xC5 => Instruction::PUSH(TargetPushPop::BC),   // PUSH BC
             0xC6 => Instruction::ADDU8,                     // ADD A, u8
             0xC7 => Instruction::RST(RstVector::H00),       // RST 0x00
@@ -770,6 +770,57 @@ impl Instruction {
             0xFD => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xFE => Instruction::CPU8,      // CP A, u8
             0xFF => Instruction::RST(RstVector::H38), // RST 0x38
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn test_from_byte_no_prefix_nop() {
+        assert_eq!(Instruction::from_byte(0x00, false), Instruction::NOP);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_from_byte_not_prefixed_prefix_byte_panic() {
+        Instruction::from_byte(BYTE_PREFIX, false);
+    }
+
+    #[test]
+    fn test_from_byte_not_prefixed_unassigned_op_bytes_panic() {
+        for byte in UNASSINGED_BYTES {
+            let result = std::panic::catch_unwind(|| Instruction::from_byte(byte, false));
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn test_each_byte_not_prefixed_has_unique_instruction() {
+        each_byte_has_unique_instruction(false);
+    }
+
+    #[test]
+    fn test_each_byte_prefixed_has_unique_instruction() {
+        each_byte_has_unique_instruction(true);
+    }
+
+    fn each_byte_has_unique_instruction(prefixed: bool) {
+        let mut instructions: HashSet<Instruction> = HashSet::from([]);
+        for byte in 0x00..0xFF {
+            if !prefixed && (UNASSINGED_BYTES.contains(&byte) || BYTE_PREFIX == byte) {
+                continue;
+            }
+            let i = Instruction::from_byte(byte, prefixed);
+            if i == Instruction::UNIMPLEMENTED {
+                continue;
+            }
+            assert!(!instructions.contains(&i));
+            instructions.insert(i);
         }
     }
 }

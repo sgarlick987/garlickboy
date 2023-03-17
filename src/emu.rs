@@ -24,8 +24,8 @@ impl Emu {
             .set_framerate(60)
             .expect("failed to set fps_manager framerate to 60");
         let gpu = GPU::new(screen);
-        let address_bus = AddressBus::new(gpu);
-        let cpu = CPU::new(address_bus);
+        let bus = Box::new(AddressBus::new(gpu));
+        let cpu = CPU::new(bus);
 
         Emu {
             fps_manager,

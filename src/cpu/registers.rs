@@ -59,27 +59,27 @@ impl Registers {
     }
 
     pub fn set_af(&mut self, af: u16) {
-        let bytes = split_bytes(af);
-        self.a = bytes[0];
-        self.flags = FlagsRegister::from(bytes[1]);
+        let (upper, lower) = split_bytes(af);
+        self.a = upper;
+        self.flags = FlagsRegister::from(lower);
     }
 
     pub fn set_bc(&mut self, bc: u16) {
-        let bytes = split_bytes(bc);
-        self.b = bytes[0];
-        self.c = bytes[1];
+        let (upper, lower) = split_bytes(bc);
+        self.b = upper;
+        self.c = lower;
     }
 
     pub fn set_de(&mut self, de: u16) {
-        let bytes = split_bytes(de);
-        self.d = bytes[0];
-        self.e = bytes[1];
+        let (upper, lower) = split_bytes(de);
+        self.d = upper;
+        self.e = lower;
     }
 
     pub fn set_hl(&mut self, hl: u16) {
-        let bytes = split_bytes(hl);
-        self.h = bytes[0];
-        self.l = bytes[1];
+        let (upper, lower) = split_bytes(hl);
+        self.h = upper;
+        self.l = lower;
     }
 
     pub fn set_sp(&mut self, upper: u8, lower: u8) {
