@@ -378,15 +378,7 @@ impl Load for CPU {
         //read
         let byte = self.read_byte_pc_lower();
 
-        match target {
-            TargetRegister8::A => self.registers.a = byte,
-            TargetRegister8::B => self.registers.b = byte,
-            TargetRegister8::C => self.registers.c = byte,
-            TargetRegister8::D => self.registers.d = byte,
-            TargetRegister8::E => self.registers.e = byte,
-            TargetRegister8::H => self.registers.h = byte,
-            TargetRegister8::L => self.registers.l = byte,
-        }
+        self.set_register_from_enum(target, byte);
 
         self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
@@ -404,85 +396,8 @@ impl Load for CPU {
     // fetch
     fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8 {
         //fetch
-        match target {
-            TargetRegister8::A => {
-                self.registers.a = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-            TargetRegister8::B => {
-                self.registers.b = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-            TargetRegister8::C => {
-                self.registers.c = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-            TargetRegister8::D => {
-                self.registers.d = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-            TargetRegister8::E => {
-                self.registers.e = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-            TargetRegister8::H => {
-                self.registers.h = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-            TargetRegister8::L => {
-                self.registers.l = match source {
-                    TargetRegister8::A => self.registers.a,
-                    TargetRegister8::B => self.registers.b,
-                    TargetRegister8::C => self.registers.c,
-                    TargetRegister8::D => self.registers.d,
-                    TargetRegister8::E => self.registers.e,
-                    TargetRegister8::H => self.registers.h,
-                    TargetRegister8::L => self.registers.l,
-                }
-            }
-        }
+        let value = self.get_register_from_enum(source);
+        self.set_register_from_enum(target, value);
 
         self.pc = self.pc.wrapping_add(1);
         let cycles_used = self.sync();
@@ -510,7 +425,7 @@ impl Load for CPU {
         cycles_used += self.sync();
 
         //read upper
-        let upper = self.read_byte_pc_lower();
+        let upper = self.read_byte_pc_upper();
         cycles_used += self.sync();
 
         //write
@@ -540,16 +455,102 @@ impl CPU {
 mod tests {
 
     use crate::address::*;
+    use coverage_helper::test;
+    use mockall::{predicate, Sequence};
 
     use super::*;
 
-    fn setup_cpu(cycles: u8) -> CPU {
+    fn setup_bus(cycles: u8) -> Box<MockBus> {
         let syncs = cycles / 4;
         let mut bus = Box::new(MockBus::new());
         bus.expect_sync().times(syncs as usize).return_const(());
-
-        CPU::new(bus)
+        bus
     }
+
+    fn setup_cpu(cycles: u8) -> CPU {
+        CPU::new(setup_bus(cycles))
+    }
+
+    #[test]
+    fn test_ld_u16_a() {
+        const CYCLES: u8 = 16;
+        const LENGTH: u16 = 3;
+        const ADDRESS: u16 = 0x2310;
+        const LOWER: u8 = 0x10;
+        const UPPER: u8 = 0x23;
+        const REGISTER_VALUE: u8 = 0xD2;
+
+        let mut bus = setup_bus(CYCLES);
+        let mut seq = Sequence::new();
+        bus.expect_read_byte()
+            .with(predicate::eq(1))
+            .times(1)
+            .in_sequence(&mut seq)
+            .return_const(LOWER);
+        bus.expect_read_byte()
+            .with(predicate::eq(2))
+            .times(1)
+            .in_sequence(&mut seq)
+            .return_const(UPPER);
+        bus.expect_write_byte()
+            .with(predicate::eq(ADDRESS), predicate::eq(REGISTER_VALUE))
+            .times(1)
+            .return_const(());
+        let mut cpu = CPU::new(bus);
+        cpu.registers.a = REGISTER_VALUE;
+        cpu.ld_u16_a();
+        assert_eq!(cpu.pc, LENGTH);
+    }
+
+    #[test]
+    fn test_ld_r8_u8() {
+        const CYCLES: u8 = 8;
+        const LENGTH: u16 = 2;
+        const VALUE: u8 = 0xF3;
+
+        let targets = [
+            TargetRegister8::A,
+            TargetRegister8::B,
+            TargetRegister8::C,
+            TargetRegister8::D,
+            TargetRegister8::E,
+            TargetRegister8::H,
+            TargetRegister8::L,
+        ];
+        for target in &targets {
+            let mut bus = setup_bus(CYCLES);
+            bus.expect_read_byte()
+                .with(predicate::eq(1))
+                .times(1)
+                .return_const(VALUE);
+            let mut cpu = CPU::new(bus);
+            cpu.ld_r8_u8(target);
+            assert_eq!(cpu.pc, LENGTH);
+            assert_eq!(cpu.get_register_from_enum(target), VALUE);
+        }
+    }
+
+    // fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8 {
+    //     //fetch
+    //     let mut cycles_used = self.sync();
+
+    //     //read
+    //     let byte = self.read_byte_pc_lower();
+
+    //     match target {
+    //         TargetRegister8::A => self.registers.a = byte,
+    //         TargetRegister8::B => self.registers.b = byte,
+    //         TargetRegister8::C => self.registers.c = byte,
+    //         TargetRegister8::D => self.registers.d = byte,
+    //         TargetRegister8::E => self.registers.e = byte,
+    //         TargetRegister8::H => self.registers.h = byte,
+    //         TargetRegister8::L => self.registers.l = byte,
+    //     }
+
+    //     self.pc = self.pc.wrapping_add(2);
+    //     cycles_used += self.sync();
+    //     cycles_used
+    // }
 
     #[test]
     fn test_ld_r8_r8() {

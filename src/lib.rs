@@ -1,4 +1,5 @@
 #![feature(bigint_helper_methods)]
+#![cfg_attr(coverage_nightly, feature(no_coverage))]
 pub mod address;
 pub mod bios;
 pub mod cpu;

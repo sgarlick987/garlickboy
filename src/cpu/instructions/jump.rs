@@ -190,6 +190,7 @@ impl Jump for CPU {
 
 #[cfg(test)]
 mod tests {
+    use coverage_helper::test;
     use mockall::{predicate, Sequence};
 
     use crate::address::*;

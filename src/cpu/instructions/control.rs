@@ -24,13 +24,16 @@ impl Control for CPU {
 #[cfg(test)]
 mod tests {
     use crate::address::*;
+    use coverage_helper::test;
 
     use super::*;
 
     #[test]
     fn test_nop() {
+        const LENGTH: u16 = 1;
+        const CYCLES: u8 = 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().once().return_const(());
+        bus.expect_sync().times(1).return_const(());
         let mut cpu = CPU::new(bus);
 
         cpu.nop();

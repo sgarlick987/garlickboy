@@ -42,10 +42,7 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "DISPLAY": "172.28.80.1:0"
-            }
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
@@ -64,10 +61,7 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "DISPLAY": "172.28.80.1:0"
-            }
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
@@ -86,10 +80,7 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "DISPLAY": "172.28.80.1:0"
-            }
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

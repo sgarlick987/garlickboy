@@ -107,6 +107,7 @@ impl Bitwise for CPU {
 #[cfg(test)]
 mod tests {
     use crate::address::*;
+    use coverage_helper::test;
 
     use super::*;
 
@@ -138,15 +139,7 @@ mod tests {
                 let mut cpu = setup_cpu(CYCLES);
                 let check = 0xFF ^ (1 << bit);
 
-                match target {
-                    TargetRegister8::A => cpu.registers.a = check,
-                    TargetRegister8::B => cpu.registers.b = check,
-                    TargetRegister8::C => cpu.registers.c = check,
-                    TargetRegister8::D => cpu.registers.d = check,
-                    TargetRegister8::E => cpu.registers.e = check,
-                    TargetRegister8::H => cpu.registers.h = check,
-                    TargetRegister8::L => cpu.registers.l = check,
-                };
+                cpu.set_register_from_enum(&target, check);
 
                 cpu.bit(&bit, &target);
 
@@ -184,16 +177,7 @@ mod tests {
                 let mut cpu = setup_cpu(CYCLES);
                 let check = 1 << bit;
 
-                match target {
-                    TargetRegister8::A => cpu.registers.a = check,
-                    TargetRegister8::B => cpu.registers.b = check,
-                    TargetRegister8::C => cpu.registers.c = check,
-                    TargetRegister8::D => cpu.registers.d = check,
-                    TargetRegister8::E => cpu.registers.e = check,
-                    TargetRegister8::H => cpu.registers.h = check,
-                    TargetRegister8::L => cpu.registers.l = check,
-                };
-
+                cpu.set_register_from_enum(&target, check);
                 cpu.bit(&bit, &target);
 
                 assert_eq!(cpu.pc, LENGTH);
