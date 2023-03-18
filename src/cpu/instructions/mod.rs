@@ -543,7 +543,7 @@ impl Instruction {
             0x27 => Instruction::DAA,                          // DDA
             0x28 => Instruction::JRF(Comparison::ZERO),        // JR Z, i8
             0x29 => Instruction::ADDR16(TargetRegister16::HL), // LD HL, HL
-            0x2A => Instruction::UNIMPLEMENTED,
+            0x2A => Instruction::LDIAHL,
             0x2B => Instruction::DEC(TargetIncDec::HL), // DEC HL
             0x2C => Instruction::INC(TargetIncDec::L),  // INC L
             0x2D => Instruction::DEC(TargetIncDec::L),  // DEC L
@@ -556,7 +556,7 @@ impl Instruction {
             0x33 => Instruction::INC(TargetIncDec::SP), // INC SP
             0x34 => Instruction::INC(TargetIncDec::HLPOINTER), // INC (HL)
             0x35 => Instruction::DEC(TargetIncDec::HLPOINTER), // DEC (HL)
-            0x36 => Instruction::UNIMPLEMENTED,
+            0x36 => Instruction::LDHLU8,
             0x37 => Instruction::SCF,
             0x38 => Instruction::JRF(Comparison::CARRY), // JR C, i8
             0x39 => Instruction::UNIMPLEMENTED,
@@ -573,7 +573,7 @@ impl Instruction {
             0x43 => Instruction::LDR8R8(TargetRegister8::B, TargetRegister8::E), // LD B, E
             0x44 => Instruction::LDR8R8(TargetRegister8::B, TargetRegister8::H), // LD B, H
             0x45 => Instruction::LDR8R8(TargetRegister8::B, TargetRegister8::L), // LD B, L
-            0x46 => Instruction::UNIMPLEMENTED,                                  // LD B, (HL)
+            0x46 => Instruction::LDR8HL(TargetRegister8::B),                     // LD B, (HL)
             0x47 => Instruction::LDR8R8(TargetRegister8::B, TargetRegister8::A), // LD B, A
             0x48 => Instruction::LDR8R8(TargetRegister8::C, TargetRegister8::B), // LD C, B
             0x49 => Instruction::LDR8R8(TargetRegister8::C, TargetRegister8::C), // LD C, C
@@ -581,7 +581,7 @@ impl Instruction {
             0x4B => Instruction::LDR8R8(TargetRegister8::C, TargetRegister8::E), // LD C, E
             0x4C => Instruction::LDR8R8(TargetRegister8::C, TargetRegister8::H), // LD C, H
             0x4D => Instruction::LDR8R8(TargetRegister8::C, TargetRegister8::L), // LD C, L
-            0x4E => Instruction::UNIMPLEMENTED,                                  // LD C, (HL)
+            0x4E => Instruction::LDR8HL(TargetRegister8::C),                     // LD C, (HL)
             0x4F => Instruction::LDR8R8(TargetRegister8::C, TargetRegister8::A), // LD C, A
 
             0x50 => Instruction::LDR8R8(TargetRegister8::D, TargetRegister8::B), // LD D, B
@@ -590,7 +590,7 @@ impl Instruction {
             0x53 => Instruction::LDR8R8(TargetRegister8::D, TargetRegister8::E), // LD D, E
             0x54 => Instruction::LDR8R8(TargetRegister8::D, TargetRegister8::H), // LD D, H
             0x55 => Instruction::LDR8R8(TargetRegister8::D, TargetRegister8::L), // LD D, L
-            0x56 => Instruction::UNIMPLEMENTED,                                  // LD D, (HL)
+            0x56 => Instruction::LDR8HL(TargetRegister8::D),                     // LD D, (HL)
             0x57 => Instruction::LDR8R8(TargetRegister8::D, TargetRegister8::A), // LD D, A
             0x58 => Instruction::LDR8R8(TargetRegister8::E, TargetRegister8::B), // LD E, B
             0x59 => Instruction::LDR8R8(TargetRegister8::E, TargetRegister8::C), // LD E, C
@@ -598,7 +598,7 @@ impl Instruction {
             0x5B => Instruction::LDR8R8(TargetRegister8::E, TargetRegister8::E), // LD E, E
             0x5C => Instruction::LDR8R8(TargetRegister8::E, TargetRegister8::H), // LD E, H
             0x5D => Instruction::LDR8R8(TargetRegister8::E, TargetRegister8::L), // LD E, L
-            0x5E => Instruction::UNIMPLEMENTED,                                  // LD E, (HL)
+            0x5E => Instruction::LDR8HL(TargetRegister8::E),                     // LD E, (HL)
             0x5F => Instruction::LDR8R8(TargetRegister8::E, TargetRegister8::A), // LD E, A
 
             0x60 => Instruction::LDR8R8(TargetRegister8::H, TargetRegister8::B), // LD H, B
@@ -632,7 +632,7 @@ impl Instruction {
             0x7B => Instruction::LDR8R8(TargetRegister8::A, TargetRegister8::E), // LD A, E
             0x7C => Instruction::LDR8R8(TargetRegister8::A, TargetRegister8::H), // LD A, H
             0x7D => Instruction::LDR8R8(TargetRegister8::A, TargetRegister8::L), // LD A, L
-            0x7E => Instruction::UNIMPLEMENTED,
+            0x7E => Instruction::LDR8HL(TargetRegister8::A),                     // LD A, (HL)
             0x7F => Instruction::LDR8R8(TargetRegister8::A, TargetRegister8::A), // LD A, A
 
             0x80 => Instruction::ADDR8(TargetRegister8::B), // ADD A, B

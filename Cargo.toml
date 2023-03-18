@@ -7,6 +7,8 @@ edition = "2021"
 mockall = "0.11.2"
 coverage-helper = "0.1"
 [dependencies]
+md-5 = "0.10.5"
+hex = "0.4.3"
 [dependencies.gl]
 git = "https://github.com/bjz/gl-rs"
 [dependencies.sdl2]

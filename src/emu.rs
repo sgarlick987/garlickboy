@@ -1,4 +1,10 @@
-use crate::{address::*, bios::*, cpu::*, gpu::*, rom::*};
+use crate::{
+    address::*,
+    bios::*,
+    cpu::*,
+    gpu::{display::Display, *},
+    rom::*,
+};
 use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPump};
 
 const MAX_CYCLES: u32 = 69905;
@@ -15,15 +21,15 @@ pub struct Emu {
 impl Emu {
     pub fn new() -> Emu {
         let rom = load_rom(GB_ROM);
-        let bios = load_bios("data/dmg_rom.bin");
-        let screen = Screen::new();
-        let event_pump = screen.event_pump();
+        let bios = load_bios("data/dmg_boot.bin");
+        let display = Display::new();
+        let event_pump = display.event_pump();
 
         let mut fps_manager = FPSManager::new();
         fps_manager
             .set_framerate(60)
             .expect("failed to set fps_manager framerate to 60");
-        let gpu = GPU::new(screen);
+        let gpu = Box::new(PPU::new(display));
         let bus = Box::new(AddressBus::new(gpu));
         let cpu = CPU::new(bus);
 
@@ -42,12 +48,11 @@ impl Emu {
     }
 
     fn write_bios(&mut self) {
-        self.cpu.write_bytes(0x0000, self.bios.data.to_vec());
+        self.cpu.write_bios(self.bios.data);
     }
 
     fn write_rom(&mut self) {
-        self.cpu
-            .write_bytes(0x0100, self.rom.data[0x0100..].to_vec());
+        self.cpu.write_bytes(0, self.rom.data.to_vec());
     }
 
     pub fn update(&mut self) -> bool {

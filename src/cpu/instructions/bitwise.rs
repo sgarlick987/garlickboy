@@ -1,13 +1,97 @@
 use super::TargetRegister8;
 use crate::cpu::CPU;
 
-pub trait Bitwise {
-    fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> u8;
-    fn rla(&mut self) -> u8;
-    fn rl(&mut self, target: &TargetRegister8) -> u8;
-}
+impl CPU {
+    // SET 7,(HL) - 0xFE
+    // Length: 2 bytes
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/rsb
+    // Timing
+    // without branch (16t)
+    // fetch	(0xCB)
+    // fetch
+    // read	(HL)
+    // write	(HL)
+    pub fn set_hl(&mut self, bit: &u8) -> u8 {
+        let hl = self.registers.get_hl();
+        //fetch
+        let mut cycles_used = self.sync();
+        //fetch
 
-impl Bitwise for CPU {
+        let bit = 1 << bit;
+        //read
+        let mut value = self.read_byte(hl);
+        value |= bit;
+        cycles_used += self.sync();
+
+        //write
+        self.write_byte(hl, value);
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // RES 0,B - 0x80
+    // Length: 2 bytes
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/rsb
+    // Timing
+    // without branch (8t)
+    // fetch	(0xCB)
+    // fetch
+    pub fn res(&mut self, bit: &u8, target: &TargetRegister8) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+        //fetch
+
+        let bit = !1 << bit;
+        let mut register = self.get_register_from_enum(target);
+        register &= bit;
+        self.set_register_from_enum(target, register);
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // SWAP B - 0x30
+    // Length: 2 bytes
+    // Flags
+    // Zero	dependent
+    // Negative	unset
+    // Half Carry	unset
+    // Carry	unset
+    // Group: x8/rsb
+    // Timing
+    // without branch (8t)
+    // fetch	(0xCB)
+    // fetch
+    pub fn swap(&mut self, target: &TargetRegister8) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+        //fetch
+
+        let swapped = self.get_register_from_enum(target).swap_bytes();
+        self.set_register_from_enum(target, swapped);
+
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.carry = false;
+        self.registers.flags.zero = swapped == 0;
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
     // BIT 2,B - 0x50
     // Length: 2 bytes
     // FlagsZero	dependent
@@ -18,7 +102,7 @@ impl Bitwise for CPU {
     // Timingwithout branch (8t)
     // fetch	(0xCB)
     // fetch
-    fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> u8 {
+    pub fn bit(&mut self, bit: &u8, target: &TargetRegister8) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
         let check = 1 << bit;
@@ -41,6 +125,40 @@ impl Bitwise for CPU {
         cycles_used
     }
 
+    // BIT 0,(HL) - 0x46
+    // Length: 2 bytes
+    // Flags
+    // Zero	dependent
+    // Negative	unset
+    // Half Carry	set
+    // Carry	unmodified
+    // Group: x8/rsb
+    // Timing
+    // without branch (12t)
+    // fetch	(0xCB)
+    // fetch
+    // read	(HL)
+    pub fn bit_hl(&mut self, bit: &u8) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+        let check = 1 << bit;
+
+        //fetch
+        cycles_used += self.sync();
+
+        //read
+        let hl = self.registers.get_hl();
+        let byte = self.read_byte(hl);
+
+        self.registers.flags.zero = byte & check == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = true;
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
     // RL C - 0x11
     // Length: 2 bytes
     // FlagsZero	dependent
@@ -51,7 +169,7 @@ impl Bitwise for CPU {
     // Timingwithout branch (8t)
     // fetch	(0xCB)
     // fetch
-    fn rl(&mut self, target: &TargetRegister8) -> u8 {
+    pub fn rl(&mut self, target: &TargetRegister8) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -87,7 +205,7 @@ impl Bitwise for CPU {
     // Group: x8/rsb
     // Timingwithout branch (4t)
     // fetch
-    fn rla(&mut self) -> u8 {
+    pub fn rla(&mut self) -> u8 {
         //fetch
         let mut new_a = self.registers.a << 1;
         if self.registers.flags.carry {
@@ -101,6 +219,36 @@ impl Bitwise for CPU {
 
         self.pc = self.pc.wrapping_add(1);
         self.sync()
+    }
+
+    // SLA B - 0x20
+    // Length: 2 bytes
+    // Flags
+    // Zero	dependent
+    // Negative	unset
+    // Half Carry	unset
+    // Carry	dependent
+    // Group: x8/rsb
+    // Timing
+    // without branch (8t)
+    // fetch	(0xCB)
+    // fetch
+    pub fn sla(&mut self, target: &TargetRegister8) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+        //fetch
+        let mut byte = self.get_register_from_enum(target);
+        self.registers.flags.carry = byte >> 7 == 1;
+        byte = byte << 1;
+        self.set_register_from_enum(target, byte);
+
+        self.registers.flags.zero = byte == 0;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
     }
 }
 

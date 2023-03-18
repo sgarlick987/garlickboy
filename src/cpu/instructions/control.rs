@@ -1,10 +1,6 @@
 use crate::cpu::CPU;
 
-pub trait Control {
-    fn nop(&mut self) -> u8;
-}
-
-impl Control for CPU {
+impl CPU {
     // NOP - 0x00
     // Length: 1 byte
     // FlagsZero	unmodified
@@ -14,8 +10,41 @@ impl Control for CPU {
     // Group: control/misc
     // Timingwithout branch (4t)
     // fetch
-    fn nop(&mut self) -> u8 {
+    pub fn nop(&mut self) -> u8 {
         //fetch
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
+    }
+    // DI - 0xF3
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: control/misc
+    // Timing
+    // without branch (4t)
+    // fetch
+    pub fn di(&mut self) -> u8 {
+        self.ime = false;
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
+    }
+
+    //     EI - 0xFB
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: control/misc
+    // Timing
+    // without branch (4t)
+    // fetch
+    pub fn ei(&mut self) -> u8 {
+        self.ime = true;
         self.pc = self.pc.wrapping_add(1);
         self.sync()
     }

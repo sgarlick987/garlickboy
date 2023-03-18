@@ -1,16 +1,53 @@
-use super::Comparison;
+use super::{Comparison, RstVector};
 use crate::cpu::CPU;
 use crate::utils::*;
 
-pub trait Jump {
-    fn jp(&mut self) -> u8;
-    fn jr(&mut self) -> u8;
-    fn jrf(&mut self, comparison: &Comparison) -> u8;
-    fn call(&mut self) -> u8;
-    fn ret(&mut self) -> u8;
-}
+impl CPU {
+    // JP Z,u16 - 0xCA
+    // Length: 3 bytes
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: control/br
+    // Timing
+    // without branch (12t)	with branch (16t)
+    // fetch	fetch
+    // read	read
+    // u16:lower	u16:lower
+    // read	read
+    // u16:upper	u16:upper
+    // internal
+    // branch decision?
+    pub fn jpf(&mut self, comparison: &Comparison) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
 
-impl Jump for CPU {
+        //read lower
+        let lower = self.read_byte_pc_lower();
+        cycles_used += self.sync();
+
+        //read upper
+        let upper = self.read_byte_pc_upper();
+
+        if match comparison {
+            Comparison::NONZERO => !self.registers.flags.zero,
+            Comparison::ZERO => self.registers.flags.zero,
+            Comparison::CARRY => self.registers.flags.carry,
+            Comparison::NOCARRY => !self.registers.flags.carry,
+        } {
+            let address = merge_bytes(upper, lower);
+            cycles_used += self.sync();
+            self.pc = address;
+        } else {
+            self.pc = self.pc.wrapping_add(3);
+        }
+
+        cycles_used += self.sync();
+        cycles_used
+    }
+
     // JP u16 - 0xC3
     // Length: 3 bytes
     // FlagsZero	unmodified
@@ -23,7 +60,7 @@ impl Jump for CPU {
     // read	u16:lower
     // read	u16:upper
     // internal	branch decision?
-    fn jp(&mut self) -> u8 {
+    pub fn jp(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -43,6 +80,24 @@ impl Jump for CPU {
         cycles_used
     }
 
+    // JP HL - 0xE9
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: control/br
+    // Timing
+    // with branch (4t)
+    // fetch
+    pub fn jp_hl(&mut self) -> u8 {
+        self.pc = self.registers.get_hl();
+
+        //fetch
+        self.sync()
+    }
+
     // JR i8 - 0x18
     // Length: 2 bytes
     // FlagsZero	unmodified
@@ -54,7 +109,7 @@ impl Jump for CPU {
     // fetch
     // read	i8
     // internal	modify PC
-    fn jr(&mut self) -> u8 {
+    pub fn jr(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -85,7 +140,7 @@ impl Jump for CPU {
     // i8	i8
     //     internal
     //     modify PC
-    fn jrf(&mut self, comparison: &Comparison) -> u8 {
+    pub fn jrf(&mut self, comparison: &Comparison) -> u8 {
         // init assuming no branch
         let next_pc = self.pc.wrapping_add(2);
 
@@ -125,7 +180,7 @@ impl Jump for CPU {
     // internal	branch decision?
     // write	PC:upper->(--SP)
     // write	PC:lower->(--SP)
-    fn call(&mut self) -> u8 {
+    pub fn call(&mut self) -> u8 {
         //fetch
         let return_address = self.pc.wrapping_add(3);
         let (return_address_upper, return_address_lower) = split_bytes(return_address);
@@ -167,22 +222,107 @@ impl Jump for CPU {
     // read	(SP++)->lower
     // read	(SP++)->upper
     // internal	set PC?
-    fn ret(&mut self) -> u8 {
+    pub fn ret(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
         //read lower
-        let lower = self.read_byte(self.registers.sp);
-        self.registers.sp = self.registers.sp.wrapping_add(1);
+        let lower = self._pop();
         cycles_used += self.sync();
 
         //read upper
-        let upper = self.read_byte(self.registers.sp);
-        self.registers.sp = self.registers.sp.wrapping_add(1);
+        let upper = self._pop();
         cycles_used += self.sync();
 
         //set pc
         self.pc = merge_bytes(upper, lower);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // RET Z - 0xC8
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: control/br
+    // Timing
+    // without branch (8t)	with branch (20t)
+    // fetch	fetch
+    // internal	internal
+    // branch decision?	branch decision?
+    // read
+    // (SP++)->lower
+    // read
+    // (SP++)->upper
+    // internal
+    // set PC?
+    pub fn retf(&mut self, comparison: &Comparison) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        if match comparison {
+            Comparison::NONZERO => !self.registers.flags.zero,
+            Comparison::ZERO => self.registers.flags.zero,
+            Comparison::CARRY => self.registers.flags.carry,
+            Comparison::NOCARRY => !self.registers.flags.carry,
+        } {
+            //read lower
+            let lower = self._pop();
+            cycles_used += self.sync();
+
+            //read upper
+            let upper = self._pop();
+            cycles_used += self.sync();
+
+            //set pc
+            self.pc = merge_bytes(upper, lower);
+        } else {
+            self.pc = self.pc.wrapping_add(1);
+        }
+
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // RST 28h - 0xEF
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: control/br
+    // Timing
+    // without branch (16t)
+    // fetch
+    // internal
+    // write	PC:upper->(--SP)
+    // write	PC:lower->(--SP)
+    pub fn rst(&mut self, target: &RstVector) -> u8 {
+        let return_address = self.pc.wrapping_add(1);
+        let (return_address_upper, return_address_lower) = split_bytes(return_address);
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //internal
+        cycles_used += self.sync();
+
+        //write
+        self._push(return_address_upper);
+        cycles_used += self.sync();
+
+        //write
+        self._push(return_address_lower);
+
+        //set pc
+        self.pc = match target {
+            RstVector::H28 => 0x28,
+            _ => panic!("unimplemented rst {:?}", target),
+        };
+
         cycles_used += self.sync();
         cycles_used
     }
@@ -219,12 +359,12 @@ mod tests {
         let mut seq = Sequence::new();
         bus.expect_read_byte()
             .with(predicate::eq(1))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(LOWER);
         bus.expect_read_byte()
             .with(predicate::eq(2))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(UPPER);
 
@@ -250,7 +390,7 @@ mod tests {
 
             bus.expect_read_byte()
                 .with(predicate::eq(PC + 1))
-                .times(1)
+                .once()
                 .return_const(jump_offset as u8);
 
             let mut cpu = CPU::new(bus);
@@ -277,7 +417,7 @@ mod tests {
             bus.expect_sync().times(syncs as usize).return_const(());
             bus.expect_read_byte()
                 .with(predicate::eq(1))
-                .times(1)
+                .once()
                 .return_const(0); //return value doesnt matter since we aren't jumping this test
 
             let mut cpu = CPU::new(bus);
@@ -309,7 +449,7 @@ mod tests {
                 bus.expect_sync().times(syncs as usize).return_const(());
                 bus.expect_read_byte()
                     .with(predicate::eq(PC.wrapping_add(1)))
-                    .times(1)
+                    .once()
                     .return_const(jump_offset as u8); //return value doesnt matter since we aren't jumping this test
 
                 let mut cpu = CPU::new(bus);
@@ -349,22 +489,22 @@ mod tests {
         let mut seq = Sequence::new();
         bus.expect_read_byte()
             .with(predicate::eq(1))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(CALL_ADDRESS_LOWER);
         bus.expect_read_byte()
             .with(predicate::eq(2))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(CALL_ADDRESS_UPPER);
         bus.expect_write_byte()
             .with(predicate::eq(1), predicate::eq(RETURN_ADDRESS_UPPER))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(());
         bus.expect_write_byte()
             .with(predicate::eq(0), predicate::eq(RETURN_ADDRESS_LOWER))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(());
 
@@ -391,12 +531,12 @@ mod tests {
         let mut seq = Sequence::new();
         bus.expect_read_byte()
             .with(predicate::eq(0))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(LOWER);
         bus.expect_read_byte()
             .with(predicate::eq(1))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(UPPER);
 

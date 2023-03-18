@@ -2,24 +2,7 @@ use super::*;
 use crate::cpu::{FlagsRegister, CPU};
 use crate::utils::*;
 
-pub trait Load {
-    fn ld_hl_r8(&mut self, target: &TargetRegister8) -> u8;
-    fn ldi_a_hl(&mut self) -> u8;
-    fn ldi_hl_a(&mut self) -> u8;
-    fn ld_ff00u8_a(&mut self) -> u8;
-    fn ld_a_ff00u8(&mut self) -> u8;
-    fn ld_ff00c_a(&mut self) -> u8;
-    fn ld_u8(&mut self, target: &TargetRegister8) -> u8;
-    fn ld_a_ptr(&mut self, target: &TargetPointer) -> u8;
-    fn ld_u16(&mut self, target: &TargetRegister16) -> u8;
-    fn pop(&mut self, target: &TargetPushPop) -> u8;
-    fn push(&mut self, target: &TargetPushPop) -> u8;
-    fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8;
-    fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8;
-    fn ld_u16_a(&mut self) -> u8;
-}
-
-impl Load for CPU {
+impl CPU {
     // LD (HL),B - 0x70
     // Length: 1 byte
     // FlagsZero	unmodified
@@ -30,7 +13,7 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // write	B->(HL)
-    fn ld_hl_r8(&mut self, target: &TargetRegister8) -> u8 {
+    pub fn ld_hl_r8(&mut self, target: &TargetRegister8) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -49,6 +32,32 @@ impl Load for CPU {
         cycles_used
     }
 
+    // LD A,(HL-) - 0x3A
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timing
+    // without branch (8t)
+    // fetch
+    // read	(HL--)->A
+    pub fn ldd_a_hl(&mut self) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let hl = self.registers.get_hl();
+        self.registers.a = self.read_byte(hl);
+        self.registers.set_hl(hl.wrapping_sub(1));
+
+        self.pc = self.pc.wrapping_add(1);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
     // LD A,(HL+) - 0x2A
     // Length: 1 byte
     // FlagsZero	unmodified
@@ -59,14 +68,40 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // read	(HL++)->A
-    fn ldi_a_hl(&mut self) -> u8 {
+    pub fn ldi_a_hl(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
         //read
         let hl = self.registers.get_hl();
+        self.registers.a = self.read_byte(hl);
+        self.registers.set_hl(hl.wrapping_add(1));
+
+        self.pc = self.pc.wrapping_add(1);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // LD (HL-),A - 0x32
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timing
+    // without branch (8t)
+    // fetch
+    // write	A->(HL--)
+    pub fn ldd_hl_a(&mut self) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //write
+        let hl = self.registers.get_hl();
         self.write_byte(hl, self.registers.a);
-        self.registers.set_hl(hl - 1);
+        self.registers.set_hl(hl.wrapping_sub(1));
 
         self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
@@ -83,7 +118,7 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // write	A->(HL++)
-    fn ldi_hl_a(&mut self) -> u8 {
+    pub fn ldi_hl_a(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -108,7 +143,7 @@ impl Load for CPU {
     // fetch
     // read	u8
     // write	A->(FF00+u8)
-    fn ld_ff00u8_a(&mut self) -> u8 {
+    pub fn ld_ff00u8_a(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -119,6 +154,55 @@ impl Load for CPU {
         self.write_byte(address, self.registers.a);
 
         self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // LD (DE),A - 0x12
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timing
+    // without branch (8t)
+    // fetch
+    // write	A->(DE)
+    pub fn ld_de_a(&mut self) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //write
+        self.write_byte(self.registers.get_de(), self.registers.a);
+
+        self.pc = self.pc.wrapping_add(1);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
+    // LD E,(HL) - 0x5E
+    // Length: 1 byte
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timing
+    // without branch (8t)
+    // fetch
+    // read	(HL)->E
+    pub fn ld_r8_hl(&mut self, target: &TargetRegister8) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let byte = self.read_byte(self.registers.get_hl());
+        self.set_register_from_enum(target, byte);
+
+        self.pc = self.pc.wrapping_add(1);
         cycles_used += self.sync();
         cycles_used
     }
@@ -134,7 +218,7 @@ impl Load for CPU {
     // fetch
     // read	u8
     // read	(FF00+u8)->A
-    fn ld_a_ff00u8(&mut self) -> u8 {
+    pub fn ld_a_ff00u8(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -160,7 +244,7 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // write	A->(FF00+C)
-    fn ld_ff00c_a(&mut self) -> u8 {
+    pub fn ld_ff00c_a(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -183,7 +267,7 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // read	u8->B
-    fn ld_u8(&mut self, target: &TargetRegister8) -> u8 {
+    pub fn ld_u8(&mut self, target: &TargetRegister8) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -214,7 +298,7 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // read	(BC)->A
-    fn ld_a_ptr(&mut self, target: &TargetPointer) -> u8 {
+    pub fn ld_a_ptr(&mut self, target: &TargetPointer) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -226,6 +310,39 @@ impl Load for CPU {
         };
 
         self.pc = self.pc.wrapping_add(1);
+        cycles_used += self.sync();
+        cycles_used
+    }
+    // LD A,(u16) - 0xFA
+    // Length: 3 bytes
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timing
+    // without branch (16t)
+    // fetch
+    // read	u16:lower
+    // read	u16:upper
+    // read	(u16)->A.
+    pub fn ld_a_u16(&mut self) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let lower = self.read_byte_pc_lower();
+        cycles_used += self.sync();
+
+        //read
+        let upper = self.read_byte_pc_upper();
+        cycles_used += self.sync();
+
+        //read
+        self.registers.a = self.read_byte(merge_bytes(upper, lower));
+
+        self.pc = self.pc.wrapping_add(3);
         cycles_used += self.sync();
         cycles_used
     }
@@ -241,7 +358,7 @@ impl Load for CPU {
     // fetch
     // read	u16:lower->C
     // read	u16:upper->B
-    fn ld_u16(&mut self, target: &TargetRegister16) -> u8 {
+    pub fn ld_u16(&mut self, target: &TargetRegister16) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -263,6 +380,10 @@ impl Load for CPU {
             TargetRegister16::DE => {
                 self.registers.e = lower;
                 self.registers.d = upper;
+            }
+            TargetRegister16::BC => {
+                self.registers.c = lower;
+                self.registers.b = upper;
             }
             _ => {
                 panic!("{:?} unimplemented LDU16", target);
@@ -286,7 +407,7 @@ impl Load for CPU {
     // internal
     // write	B->(--SP)
     // write	C->(--SP)
-    fn push(&mut self, target: &TargetPushPop) -> u8 {
+    pub fn push(&mut self, target: &TargetPushPop) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -333,7 +454,7 @@ impl Load for CPU {
     // fetch
     // read	(SP++)->C
     // read	(SP++)->B
-    fn pop(&mut self, target: &TargetPushPop) -> u8 {
+    pub fn pop(&mut self, target: &TargetPushPop) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -371,7 +492,7 @@ impl Load for CPU {
     // Timingwithout branch (8t)
     // fetch
     // read	u8->D
-    fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8 {
+    pub fn ld_r8_u8(&mut self, target: &TargetRegister8) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -394,7 +515,7 @@ impl Load for CPU {
     // Group: x8/lsm
     // Timingwithout branch (4t)
     // fetch
-    fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8 {
+    pub fn ld_r8_r8(&mut self, target: &TargetRegister8, source: &TargetRegister8) -> u8 {
         //fetch
         let value = self.get_register_from_enum(source);
         self.set_register_from_enum(target, value);
@@ -416,7 +537,7 @@ impl Load for CPU {
     // read	u16:lower
     // read	u16:upper
     // write	A->(u16)
-    fn ld_u16_a(&mut self) -> u8 {
+    pub fn ld_u16_a(&mut self) -> u8 {
         //fetch
         let mut cycles_used = self.sync();
 
@@ -436,9 +557,36 @@ impl Load for CPU {
         cycles_used += self.sync();
         cycles_used
     }
-}
 
-impl CPU {
+    // LD (HL),u8 - 0x36
+    // Length: 2 bytes
+    // Flags
+    // Zero	unmodified
+    // Negative	unmodified
+    // Half Carry	unmodified
+    // Carry	unmodified
+    // Group: x8/lsm
+    // Timing
+    // without branch (12t)
+    // fetch
+    // read	u8
+    // write	(HL)
+    pub fn ld_hl_u8(&mut self) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let byte = self.read_byte_pc_lower();
+        cycles_used += self.sync();
+
+        //write
+        self.write_byte(self.registers.get_hl(), byte);
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
     pub fn _push(&mut self, byte: u8) {
         self.registers.sp = self.registers.sp.wrapping_sub(1);
         self.write_byte(self.registers.sp, byte);
@@ -484,17 +632,17 @@ mod tests {
         let mut seq = Sequence::new();
         bus.expect_read_byte()
             .with(predicate::eq(1))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(LOWER);
         bus.expect_read_byte()
             .with(predicate::eq(2))
-            .times(1)
+            .once()
             .in_sequence(&mut seq)
             .return_const(UPPER);
         bus.expect_write_byte()
             .with(predicate::eq(ADDRESS), predicate::eq(REGISTER_VALUE))
-            .times(1)
+            .once()
             .return_const(());
         let mut cpu = CPU::new(bus);
         cpu.registers.a = REGISTER_VALUE;
@@ -521,7 +669,7 @@ mod tests {
             let mut bus = setup_bus(CYCLES);
             bus.expect_read_byte()
                 .with(predicate::eq(1))
-                .times(1)
+                .once()
                 .return_const(VALUE);
             let mut cpu = CPU::new(bus);
             cpu.ld_r8_u8(target);

@@ -13,6 +13,8 @@ pub struct CPU {
     registers: Registers,
     bus: Box<dyn Bus>,
     pc: u16,
+    ime: bool,
+    print: bool,
 }
 
 impl CPU {
@@ -22,6 +24,8 @@ impl CPU {
             registers,
             bus,
             pc: 0,
+            ime: false,
+            print: false,
         }
     }
 
@@ -73,6 +77,10 @@ impl CPU {
         self.bus.write_bytes(address as usize, bytes);
     }
 
+    pub fn write_bios(&mut self, bytes: [u8; 0x100]) {
+        self.bus.write_boot(bytes);
+    }
+
     fn sync(&mut self) -> u8 {
         self.bus.sync();
         4
@@ -89,8 +97,11 @@ impl CPU {
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
-        if instruction == Instruction::NOP {
-            return 20;
+        if self.pc == 0x64d3 {
+            self.print = true;
+        }
+        if self.print {
+            println!("pc: {:x}, inst: {:?}", self.pc, instruction);
         }
         instruction.execute(self)
     }
