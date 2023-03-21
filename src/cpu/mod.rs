@@ -3,27 +3,51 @@ pub mod instructions;
 pub mod interrupts;
 pub mod registers;
 
-use crate::{address::*, utils::split_bytes};
+use crate::{address::*, display::Display};
 
 use self::{
-    instructions::{execute::Execution, *},
+    instructions::*,
     interrupts::{InterruptHandler, IE_ADDRESS, IF_ADDRESS},
     registers::*,
 };
 
-pub struct CPU {
-    registers: Registers,
+impl GameboyChip {
+    pub fn fetch(&mut self) -> Vec<Box<dyn FnMut(&mut GameboyChip)>> {
+        let mut instruction_byte = self.bus.read_byte(self.pc);
+
+        let prefixed = instruction_byte == BYTE_PREFIX;
+        if prefixed {
+            instruction_byte = self.bus.read_byte(self.pc.wrapping_add(1));
+        }
+        let instruction = Instruction::from_byte(instruction_byte, prefixed);
+        if instruction == Instruction::UNIMPLEMENTED {
+            panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
+        }
+        instruction.fetch()
+    }
+
+    pub fn execute(&mut self, mut inst: Box<dyn FnMut(&mut GameboyChip)>) {
+        inst(self);
+    }
+
+    pub fn update_display(&mut self, display: &mut Display) {
+        self.bus.update_display(display);
+    }
+}
+
+pub struct GameboyChip {
+    pub registers: Registers,
     interrupt_handler: InterruptHandler,
     bus: Box<dyn Bus>,
     pc: u16,
     print: bool,
 }
 
-impl CPU {
-    pub fn new(bus: Box<dyn Bus>) -> CPU {
+impl GameboyChip {
+    pub fn new(bus: Box<dyn Bus>) -> GameboyChip {
         let registers = Registers::new();
         let interrupt_handler = InterruptHandler::new();
-        CPU {
+        GameboyChip {
             registers,
             interrupt_handler,
             bus,
@@ -56,9 +80,9 @@ impl CPU {
         }
     }
 
-    pub fn render(&mut self) {
-        self.bus.render();
-    }
+    // pub fn render(&mut self) {
+    //     self.bus.render();
+    // }
 
     pub fn write_byte(&mut self, address: u16, byte: u8) {
         match address {
@@ -92,44 +116,44 @@ impl CPU {
         self.bus.write_boot(bytes);
     }
 
-    fn sync(&mut self) -> u8 {
-        let ly = self.bus.sync();
-        if ly == 145 {
-            self.interrupt_handler.flag_vblank();
-        }
-        4
-    }
+    // fn sync(&mut self) -> u8 {
+    //     let ly = self.bus.sync();
+    //     if ly == 145 {
+    //         self.interrupt_handler.flag_vblank();
+    //     }
+    //     4
+    // }
 
-    pub fn step(&mut self) -> u8 {
-        let mut instruction_byte = self.bus.read_byte(self.pc);
+    // pub fn step_old(&mut self) -> u8 {
+    //     let mut instruction_byte = self.bus.read_byte(self.pc);
 
-        let prefixed = instruction_byte == BYTE_PREFIX;
-        if prefixed {
-            instruction_byte = self.bus.read_byte(self.pc.wrapping_add(1));
-        }
-        let instruction = Instruction::from_byte(instruction_byte, prefixed);
-        if instruction == Instruction::UNIMPLEMENTED {
-            panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
-        }
-        if self.pc == 0x02cd {
-            self.print = false;
-        }
-        if self.print {
-            println!("pc: {:x}, inst: {:?}", self.pc, instruction);
-        }
-        let interrupt_address = self.interrupt_handler.handle();
-        if interrupt_address != 0x0000 {
-            self.sync();
-            self.sync();
-            let (upper, lower) = split_bytes(self.pc);
-            self._push(upper);
-            self.sync();
-            self._push(lower);
-            self.sync();
-            self.pc = interrupt_address;
-            self.sync();
-            return 20;
-        }
-        instruction.execute(self)
-    }
+    //     let prefixed = instruction_byte == BYTE_PREFIX;
+    //     if prefixed {
+    //         instruction_byte = self.bus.read_byte(self.pc.wrapping_add(1));
+    //     }
+    //     let instruction = Instruction::from_byte(instruction_byte, prefixed);
+    //     if instruction == Instruction::UNIMPLEMENTED {
+    //         panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
+    //     }
+    //     if self.pc == 0x02cd {
+    //         self.print = false;
+    //     }
+    //     if self.print {
+    //         println!("pc: {:x}, inst: {:?}", self.pc, instruction);
+    //     }
+    //     let interrupt_address = self.interrupt_handler.handle();
+    //     if interrupt_address != 0x0000 {
+    //         self.sync();
+    //         self.sync();
+    //         let (upper, lower) = split_bytes(self.pc);
+    //         self._push(upper);
+    //         self.sync();
+    //         self._push(lower);
+    //         self.sync();
+    //         self.pc = interrupt_address;
+    //         self.sync();
+    //         return 20;
+    //     }
+    //     instruction.execute(self)
+    // }
 }

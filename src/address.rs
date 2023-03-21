@@ -1,12 +1,13 @@
-use crate::gpu::*;
+use crate::{display::Display, gpu::*};
 
 #[cfg_attr(test, mockall::automock)]
 pub trait Bus {
     fn read_byte(&mut self, address: u16) -> u8;
     fn write_byte(&mut self, address: u16, byte: u8);
     fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
-    fn render(&mut self);
-    fn sync(&mut self) -> u8;
+    // fn render(&mut self);
+    fn update_display(&mut self, display: &mut Display);
+    // fn sync(&mut self) -> u8;
     fn write_boot(&mut self, bytes: [u8; 0x100]);
 }
 
@@ -29,13 +30,17 @@ impl AddressBus {
 }
 
 impl Bus for AddressBus {
-    fn sync(&mut self) -> u8 {
-        self.gpu.sync()
+    fn update_display(&mut self, display: &mut Display) {
+        self.gpu.update_display(display);
     }
 
-    fn render(&mut self) {
-        self.gpu.render();
-    }
+    // fn sync(&mut self) -> u8 {
+    //     self.gpu.sync()
+    // }
+
+    // fn render(&mut self) {
+    //     self.gpu.render();
+    // }
 
     fn read_byte(&mut self, address: u16) -> u8 {
         let address = address as usize;

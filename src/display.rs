@@ -4,45 +4,32 @@ use sdl2::{
     pixels::{Color, PixelFormat},
     rect::Rect,
     render::{Canvas, Texture, TextureCreator},
-    EventPump,
+    Sdl,
 };
 
 pub const VIDEO_SCALE: u32 = 4;
 
 pub struct Display {
-    sdl: sdl2::Sdl,
     canvas: Canvas<sdl2::video::Window>,
     texture_creator: TextureCreator<sdl2::video::WindowContext>,
     texture: RefCell<Texture<'static>>,
     data: Vec<u32>,
     width: u32,
-    // height: u32,
 }
 
 impl Display {
-    pub fn present(&mut self, x: i32, y: i32) {
-        let mut texture = self.texture.borrow_mut();
-        texture
-            .update(None, self.data_raw(), (self.width * 4) as usize)
-            .expect("failed to update screen texture");
-        self.canvas
-            .with_texture_canvas(&mut texture, |texture_canvas| {
-                texture_canvas.set_draw_color(Color::BLUE);
-                texture_canvas.draw_rect(Rect::new(x, y, 160, 144)).unwrap();
-            })
-            .unwrap();
-        self.canvas.copy(&texture, None, None).unwrap();
+    pub fn present(&mut self) {
+        // let mut texture = self.texture.borrow_mut();
+        // texture
+        //     .update(None, self.data_raw(), (self.width * 4) as usize)
+        //     .expect("failed to update screen texture");
+        // self.canvas.copy(&texture, None, None).unwrap();
         self.canvas.present();
     }
 
-    pub fn present_off(&mut self) {
+    pub fn off(&mut self) {
         self.canvas.set_draw_color(Color::BLACK);
         self.canvas.clear();
-        self.canvas.present();
-    }
-
-    pub fn event_pump(&self) -> EventPump {
-        self.sdl.event_pump().expect("failed to get event_pump")
     }
 
     pub fn draw_pixel(&mut self, x: u32, y: u32, color: Color) {
@@ -77,13 +64,11 @@ impl Display {
         let texture = unsafe { std::mem::transmute::<_, Texture<'static>>(texture) };
 
         Display {
-            sdl,
             canvas,
             texture_creator,
             texture: RefCell::new(texture),
             data: vec![0; (256 * 256) as usize],
             width: 256,
-            // height: 256,
         }
     }
 }
