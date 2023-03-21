@@ -1,30 +1,33 @@
 #![allow(dead_code)]
 pub mod instructions;
+pub mod interrupts;
 pub mod registers;
 
-use crate::address::*;
+use crate::{address::*, utils::split_bytes};
 
 use self::{
     instructions::{execute::Execution, *},
+    interrupts::{InterruptHandler, IE_ADDRESS, IF_ADDRESS},
     registers::*,
 };
 
 pub struct CPU {
     registers: Registers,
+    interrupt_handler: InterruptHandler,
     bus: Box<dyn Bus>,
     pc: u16,
-    ime: bool,
     print: bool,
 }
 
 impl CPU {
     pub fn new(bus: Box<dyn Bus>) -> CPU {
-        let registers = registers::new_registers();
+        let registers = Registers::new();
+        let interrupt_handler = InterruptHandler::new();
         CPU {
             registers,
+            interrupt_handler,
             bus,
             pc: 0,
-            ime: false,
             print: false,
         }
     }
@@ -58,11 +61,19 @@ impl CPU {
     }
 
     pub fn write_byte(&mut self, address: u16, byte: u8) {
-        self.bus.write_byte(address, byte);
+        match address {
+            IF_ADDRESS => self.interrupt_handler.set_flags(byte),
+            IE_ADDRESS => self.interrupt_handler.set_enable(byte),
+            _ => self.bus.write_byte(address, byte),
+        }
     }
 
     pub fn read_byte(&mut self, address: u16) -> u8 {
-        self.bus.read_byte(address)
+        match address {
+            IF_ADDRESS => self.interrupt_handler.get_flags(),
+            IE_ADDRESS => self.interrupt_handler.get_enable(),
+            _ => self.bus.read_byte(address),
+        }
     }
 
     pub fn read_byte_pc_lower(&mut self) -> u8 {
@@ -82,7 +93,10 @@ impl CPU {
     }
 
     fn sync(&mut self) -> u8 {
-        self.bus.sync();
+        let ly = self.bus.sync();
+        if ly == 145 {
+            self.interrupt_handler.flag_vblank();
+        }
         4
     }
 
@@ -97,11 +111,24 @@ impl CPU {
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
-        if self.pc == 0x64d3 {
-            self.print = true;
+        if self.pc == 0x02cd {
+            self.print = false;
         }
         if self.print {
             println!("pc: {:x}, inst: {:?}", self.pc, instruction);
+        }
+        let interrupt_address = self.interrupt_handler.handle();
+        if interrupt_address != 0x0000 {
+            self.sync();
+            self.sync();
+            let (upper, lower) = split_bytes(self.pc);
+            self._push(upper);
+            self.sync();
+            self._push(lower);
+            self.sync();
+            self.pc = interrupt_address;
+            self.sync();
+            return 20;
         }
         instruction.execute(self)
     }

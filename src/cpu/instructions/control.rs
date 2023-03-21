@@ -15,6 +15,7 @@ impl CPU {
         self.pc = self.pc.wrapping_add(1);
         self.sync()
     }
+
     // DI - 0xF3
     // Length: 1 byte
     // Flags
@@ -27,7 +28,7 @@ impl CPU {
     // without branch (4t)
     // fetch
     pub fn di(&mut self) -> u8 {
-        self.ime = false;
+        self.interrupt_handler.disable_ime();
         self.pc = self.pc.wrapping_add(1);
         self.sync()
     }
@@ -44,7 +45,7 @@ impl CPU {
     // without branch (4t)
     // fetch
     pub fn ei(&mut self) -> u8 {
-        self.ime = true;
+        self.interrupt_handler.schedule_ime();
         self.pc = self.pc.wrapping_add(1);
         self.sync()
     }
@@ -62,7 +63,7 @@ mod tests {
         const LENGTH: u16 = 1;
         const CYCLES: u8 = 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().times(1).return_const(());
+        bus.expect_sync().times(1).return_const(0);
         let mut cpu = CPU::new(bus);
 
         cpu.nop();

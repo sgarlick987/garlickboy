@@ -6,7 +6,7 @@ pub trait Bus {
     fn write_byte(&mut self, address: u16, byte: u8);
     fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
     fn render(&mut self);
-    fn sync(&mut self);
+    fn sync(&mut self) -> u8;
     fn write_boot(&mut self, bytes: [u8; 0x100]);
 }
 
@@ -29,8 +29,8 @@ impl AddressBus {
 }
 
 impl Bus for AddressBus {
-    fn sync(&mut self) {
-        self.gpu.sync();
+    fn sync(&mut self) -> u8 {
+        self.gpu.sync()
     }
 
     fn render(&mut self) {
@@ -43,7 +43,6 @@ impl Bus for AddressBus {
             return self.gpu.read_registers(address);
         }
         match address {
-            0xFFE1 => self.memory[address],
             0x0..=0xFF => {
                 if self.boot_rom_mapped {
                     self.boot_rom[address]
@@ -51,9 +50,9 @@ impl Bus for AddressBus {
                     self.memory[address]
                 }
             }
-            0xFF85 => 1,
-            0xFF00 => 1,
-            0xFFFF => 1,
+            0xFF00 => 0xFF,
+            0xFF80 => 0,
+            0xFF81 => 0,
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             _ => self.memory[address],
         }
@@ -66,9 +65,8 @@ impl Bus for AddressBus {
             return;
         }
         match address {
-            0xFFE1 => self.memory[address] = byte,
             0xFF50 => self.boot_rom_mapped = false,
-            0xFFFF => (),
+            0x0000..=0x7FFF => (), // ignore writes to rom
             VRAM_BEGIN..=VRAM_END => {
                 self.gpu.write_vram(address - VRAM_BEGIN, byte);
             }

@@ -44,6 +44,36 @@ impl CPU {
         cycles_used
     }
 
+    // XOR A,u8 - 0xEE
+    // Length: 2 bytes
+    // Flags
+    // Zero	dependent
+    // Negative	unset
+    // Half Carry	unset
+    // Carry	unset
+    // Group: x8/alu
+    // Timing
+    // without branch (8t)
+    // fetch
+    // read	u8
+    pub fn xor_u8(&mut self) -> u8 {
+        //fetch
+        let mut cycles_used = self.sync();
+
+        //read
+        let byte = self.read_byte_pc_lower();
+
+        self.registers.a ^= byte;
+        self.registers.flags.zero = self.registers.a == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.carry = false;
+
+        self.pc = self.pc.wrapping_add(2);
+        cycles_used += self.sync();
+        cycles_used
+    }
+
     // XOR A,B - 0xA8
     // Length: 1 byte
     // FlagsZero	dependent
@@ -113,6 +143,31 @@ impl CPU {
         self.pc = self.pc.wrapping_add(2);
         cycles_used += self.sync();
         cycles_used
+    }
+
+    // CP A,B - 0xB8
+    // Length: 1 byte
+    // Flags
+    // Zero	dependent
+    // Negative	set
+    // Half Carry	dependent
+    // Carry	dependent
+    // Group: x8/alu
+    // Timing
+    // without branch (4t)
+    // fetch
+    pub fn cp_r8(&mut self, target: &TargetRegister8) -> u8 {
+        //fetch
+
+        let byte = self.get_register_from_enum(target);
+        let a = self.registers.a;
+        self.registers.flags.negative = true;
+        self.registers.flags.zero = a == byte;
+        self.registers.flags.carry = a < byte;
+        self.registers.flags.half_carry = bytes_half_carry(a, byte);
+
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
     }
 
     // CP A,(HL) - 0xBE

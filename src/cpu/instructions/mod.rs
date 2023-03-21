@@ -539,9 +539,9 @@ impl Instruction {
             0x23 => Instruction::INC(TargetIncDec::HL), // INC HL
             0x24 => Instruction::INC(TargetIncDec::H),  // INC H
             0x25 => Instruction::DEC(TargetIncDec::H),  // DEC H
-            0x26 => Instruction::UNIMPLEMENTED,
-            0x27 => Instruction::DAA,                          // DDA
-            0x28 => Instruction::JRF(Comparison::ZERO),        // JR Z, i8
+            0x26 => Instruction::LDU8(TargetRegister8::H), // LD HD, u8
+            0x27 => Instruction::DAA,                   // DDA
+            0x28 => Instruction::JRF(Comparison::ZERO), // JR Z, i8
             0x29 => Instruction::ADDR16(TargetRegister16::HL), // LD HL, HL
             0x2A => Instruction::LDIAHL,
             0x2B => Instruction::DEC(TargetIncDec::HL), // DEC HL

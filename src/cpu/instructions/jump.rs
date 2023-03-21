@@ -210,6 +210,13 @@ impl CPU {
         cycles
     }
 
+    pub fn reti(&mut self) -> u8 {
+        let mut cycles = self.ret();
+        self.interrupt_handler.schedule_ime();
+        cycles += self.sync();
+        cycles
+    }
+
     // RET - 0xC9
     // Length: 1 byte
     // FlagsZero	unmodified
@@ -354,7 +361,7 @@ mod tests {
 
         let syncs = CYCLES / 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().times(syncs as usize).return_const(());
+        bus.expect_sync().times(syncs as usize).return_const(0);
 
         let mut seq = Sequence::new();
         bus.expect_read_byte()
@@ -386,7 +393,7 @@ mod tests {
 
         for jump_offset in JUMP_OFFSETS {
             let mut bus = Box::new(MockBus::new());
-            bus.expect_sync().times(syncs as usize).return_const(());
+            bus.expect_sync().times(syncs as usize).return_const(0);
 
             bus.expect_read_byte()
                 .with(predicate::eq(PC + 1))
@@ -414,7 +421,7 @@ mod tests {
 
         for comparison in COMPARISONS {
             let mut bus = Box::new(MockBus::new());
-            bus.expect_sync().times(syncs as usize).return_const(());
+            bus.expect_sync().times(syncs as usize).return_const(0);
             bus.expect_read_byte()
                 .with(predicate::eq(1))
                 .once()
@@ -446,7 +453,7 @@ mod tests {
         for jump_offset in JUMP_OFFSETS {
             for comparison in COMPARISONS {
                 let mut bus = Box::new(MockBus::new());
-                bus.expect_sync().times(syncs as usize).return_const(());
+                bus.expect_sync().times(syncs as usize).return_const(0);
                 bus.expect_read_byte()
                     .with(predicate::eq(PC.wrapping_add(1)))
                     .once()
@@ -484,7 +491,7 @@ mod tests {
 
         let syncs = CYCLES / 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().times(syncs as usize).return_const(());
+        bus.expect_sync().times(syncs as usize).return_const(0);
 
         let mut seq = Sequence::new();
         bus.expect_read_byte()
@@ -526,7 +533,7 @@ mod tests {
 
         let syncs = CYCLES / 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().times(syncs as usize).return_const(());
+        bus.expect_sync().times(syncs as usize).return_const(0);
 
         let mut seq = Sequence::new();
         bus.expect_read_byte()

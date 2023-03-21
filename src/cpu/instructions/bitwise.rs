@@ -196,6 +196,31 @@ impl CPU {
         cycles_used
     }
 
+    // RLCA - 0x07
+    // Length: 1 byte
+    // Flags
+    // Zero	unset
+    // Negative	unset
+    // Half Carry	unset
+    // Carry	dependent
+    // Group: x8/rsb
+    // Timing
+    // without branch (4t)
+    // fetch
+    pub fn rlca(&mut self) -> u8 {
+        //fetch
+        let new_a = self.registers.a << 1;
+
+        self.registers.flags.carry = self.registers.a >> 7 == 1;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = false;
+        self.registers.a = new_a;
+
+        self.pc = self.pc.wrapping_add(1);
+        self.sync()
+    }
+
     // RLA - 0x17
     // Length: 1 byte
     // FlagsZero	unset
@@ -262,7 +287,7 @@ mod tests {
     fn setup_cpu(cycles: u8) -> CPU {
         let syncs = cycles / 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().times(syncs as usize).return_const(());
+        bus.expect_sync().times(syncs as usize).return_const(0);
 
         CPU::new(bus)
     }

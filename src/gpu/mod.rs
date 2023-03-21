@@ -8,7 +8,7 @@ pub const VRAM_END: usize = 0x9FFF;
 pub const VRAM_SIZE: usize = VRAM_END - VRAM_BEGIN + 1;
 
 pub trait GPU {
-    fn sync(&mut self);
+    fn sync(&mut self) -> u8;
     fn render(&mut self);
     fn write_vram(&mut self, address: usize, byte: u8);
     fn read_vram(&self, address: usize) -> u8;
@@ -75,9 +75,9 @@ impl GPU for PPU {
         self.vram[address]
     }
 
-    fn sync(&mut self) {
+    fn sync(&mut self) -> u8 {
         if !self.lcd_on {
-            return;
+            return 0;
         }
 
         self.cycle += 4;
@@ -88,6 +88,7 @@ impl GPU for PPU {
         if self.ly == 154 {
             self.ly = 0;
         }
+        return self.ly;
     }
 
     fn render(&mut self) {

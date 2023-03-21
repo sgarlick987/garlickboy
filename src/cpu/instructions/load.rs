@@ -611,7 +611,7 @@ mod tests {
     fn setup_bus(cycles: u8) -> Box<MockBus> {
         let syncs = cycles / 4;
         let mut bus = Box::new(MockBus::new());
-        bus.expect_sync().times(syncs as usize).return_const(());
+        bus.expect_sync().times(syncs as usize).return_const(0);
         bus
     }
 

@@ -2,7 +2,6 @@
 
 use crate::utils::*;
 
-#[derive(Debug)]
 //documented gameboy registers
 //f of the af register is represented
 //by the special FlagsRegister
@@ -18,26 +17,21 @@ pub struct Registers {
     pub flags: FlagsRegister,
 }
 
-pub fn new_registers() -> Registers {
-    Registers {
-        a: 0,
-        b: 0,
-        c: 0,
-        d: 0,
-        e: 0,
-        h: 0,
-        l: 0,
-        sp: 0,
-        flags: FlagsRegister {
-            zero: false,
-            negative: false,
-            half_carry: false,
-            carry: false,
-        },
-    }
-}
-
 impl Registers {
+    pub fn new() -> Registers {
+        Registers {
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            sp: 0,
+            flags: FlagsRegister::from(0),
+        }
+    }
+
     pub fn get_af(&self) -> u16 {
         merge_bytes(self.a, u8::from(self.flags))
     }
@@ -90,7 +84,7 @@ impl Registers {
 //this represents the lower 8 bits of our AF register
 //since it serves a special case of the 4 upper bits being special flags
 //the lower 4 bits are always set to 0 so they aren't represented here.
-#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone)]
 pub struct FlagsRegister {
     pub zero: bool,
     pub negative: bool,
@@ -98,35 +92,30 @@ pub struct FlagsRegister {
     pub carry: bool,
 }
 
-//this values are listed in the docs only the upper 4 bits are used with lower 4 always being 0
-//each value is a byte with the documented byte position set to 1 so it can be used to with
-//bitwise & to determine if a specific flag on our flag register is set.
-const FLAGS_REGISTER_ZERO_BYTE: u8 = 0b10000000;
-const FLAGS_REGISTER_SUBTRACTION_BYTE: u8 = 0b01000000;
-const FLAGS_REGISTER_HALF_CARRY_BYTE: u8 = 0b00100000;
-const FLAGS_REGISTER_CARRY_BYTE: u8 = 0b00010000;
+const FLAGS_REGISTER_ZERO_BIT: u8 = 1 << 7;
+const FLAGS_REGISTER_SUBTRACTION_BIT: u8 = 1 << 6;
+const FLAGS_REGISTER_HALF_CARRY_BIT: u8 = 1 << 5;
+const FLAGS_REGISTER_CARRY_BIT: u8 = 1 << 4;
 
-//convert our FlagsRegister to a u8 by bitwise oring each flags byte consant when their corresponding boolean is set
-//lastly shift left by 4 so that we have a u8 with upper 4 bits set to our flags.
 impl std::convert::From<FlagsRegister> for u8 {
     fn from(flag: FlagsRegister) -> u8 {
         (if flag.zero {
-            FLAGS_REGISTER_ZERO_BYTE
+            FLAGS_REGISTER_ZERO_BIT
         } else {
             0
         }) | (if flag.negative {
-            FLAGS_REGISTER_SUBTRACTION_BYTE
+            FLAGS_REGISTER_SUBTRACTION_BIT
         } else {
             0
         }) | (if flag.half_carry {
-            FLAGS_REGISTER_HALF_CARRY_BYTE
+            FLAGS_REGISTER_HALF_CARRY_BIT
         } else {
             0
         }) | (if flag.carry {
-            FLAGS_REGISTER_CARRY_BYTE
+            FLAGS_REGISTER_CARRY_BIT
         } else {
             0
-        }) << 4
+        })
     }
 }
 
@@ -134,14 +123,14 @@ impl std::convert::From<FlagsRegister> for u8 {
 //and checking if the bit is set.
 impl std::convert::From<u8> for FlagsRegister {
     fn from(byte: u8) -> Self {
-        let zero = (byte & FLAGS_REGISTER_ZERO_BYTE) != 0;
-        let subtraction = (byte & FLAGS_REGISTER_SUBTRACTION_BYTE) != 0;
-        let half_carry = (byte & FLAGS_REGISTER_HALF_CARRY_BYTE) != 0;
-        let carry = (byte & FLAGS_REGISTER_CARRY_BYTE) != 0;
+        let zero = (byte & FLAGS_REGISTER_ZERO_BIT) != 0;
+        let negative = (byte & FLAGS_REGISTER_SUBTRACTION_BIT) != 0;
+        let half_carry = (byte & FLAGS_REGISTER_HALF_CARRY_BIT) != 0;
+        let carry = (byte & FLAGS_REGISTER_CARRY_BIT) != 0;
 
         FlagsRegister {
             zero,
-            negative: subtraction,
+            negative,
             half_carry,
             carry,
         }

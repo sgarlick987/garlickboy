@@ -63,6 +63,10 @@ impl Execution for Instruction {
             Instruction::RETF(target) => cpu.retf(target),
             Instruction::ADDU8 => cpu.add_u8(),
             Instruction::BITHL(bit) => cpu.bit_hl(bit),
+            Instruction::RETI => cpu.reti(),
+            Instruction::XORU8 => cpu.xor_u8(),
+            Instruction::RLCA => cpu.rlca(),
+            Instruction::CPR8(target) => cpu.cp_r8(target),
             _ => {
                 panic!("{:?} unimplemented Instruction pc: {:x}", self, cpu.pc);
             }
