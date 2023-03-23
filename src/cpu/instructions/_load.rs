@@ -82,31 +82,6 @@ use crate::utils::*;
 //         cycles_used
 //     }
 
-//     // LD (HL-),A - 0x32
-//     // Length: 1 byte
-//     // Flags
-//     // Zero	unmodified
-//     // Negative	unmodified
-//     // Half Carry	unmodified
-//     // Carry	unmodified
-//     // Group: x8/lsm
-//     // Timing
-//     // without branch (8t)
-//     // fetch
-//     // write	A->(HL--)
-//     pub fn ldd_hl_a(&mut self) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //write
-//         let hl = self.registers.get_hl();
-//         self.write_byte(hl, self.registers.a);
-//         self.registers.set_hl(hl.wrapping_sub(1));
-
-//         self.pc = self.pc.wrapping_add(1);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
 
 //     // LD (HL+),A - 0x22
 //     // Length: 1 byte
@@ -234,59 +209,6 @@ use crate::utils::*;
 //         cycles_used
 //     }
 
-//     // LD (FF00+C),A - 0xE2
-//     // Length: 1 byte
-//     // FlagsZero	unmodified
-//     // Negative	unmodified
-//     // Half Carry	unmodified
-//     // Carry	unmodified
-//     // Group: x8/lsm
-//     // Timingwithout branch (8t)
-//     // fetch
-//     // write	A->(FF00+C)
-//     pub fn ld_ff00c_a(&mut self) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //write
-//         let address = 0xFF00 + self.registers.c as u16;
-//         self.write_byte(address, self.registers.a);
-
-//         self.pc = self.pc.wrapping_add(1);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
-
-//     // LD B,u8 - 0x06
-//     // Length: 2 bytes
-//     // FlagsZero	unmodified
-//     // Negative	unmodified
-//     // Half Carry	unmodified
-//     // Carry	unmodified
-//     // Group: x8/lsm
-//     // Timingwithout branch (8t)
-//     // fetch
-//     // read	u8->B
-//     pub fn ld_u8(&mut self, target: &TargetRegister8) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //read
-//         let value = self.read_byte_pc_lower();
-//         match target {
-//             TargetRegister8::A => self.registers.a = value,
-//             TargetRegister8::B => self.registers.b = value,
-//             TargetRegister8::C => self.registers.c = value,
-//             TargetRegister8::D => self.registers.d = value,
-//             TargetRegister8::E => self.registers.e = value,
-//             TargetRegister8::H => self.registers.h = value,
-//             TargetRegister8::L => self.registers.l = value,
-//         }
-
-//         self.pc = self.pc.wrapping_add(2);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
 
 //     // LD A,(BC) - 0x0A
 //     // Length: 1 byte
@@ -341,54 +263,6 @@ use crate::utils::*;
 
 //         //read
 //         self.registers.a = self.read_byte(merge_bytes(upper, lower));
-
-//         self.pc = self.pc.wrapping_add(3);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
-
-//     // LD BC,u16 - 0x01
-//     // Length: 3 bytes
-//     // FlagsZero	unmodified
-//     // Negative	unmodified
-//     // Half Carry	unmodified
-//     // Carry	unmodified
-//     // Group: x16/lsm
-//     // Timingwithout branch (12t)
-//     // fetch
-//     // read	u16:lower->C
-//     // read	u16:upper->B
-//     pub fn ld_u16(&mut self, target: &TargetRegister16) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //read lower
-//         let lower = self.read_byte_pc_lower();
-//         cycles_used += self.sync();
-
-//         //read upper
-//         let upper = self.read_byte_pc_upper();
-
-//         match target {
-//             TargetRegister16::SP => {
-//                 self.registers.set_sp(upper, lower);
-//             }
-//             TargetRegister16::HL => {
-//                 self.registers.l = lower;
-//                 self.registers.h = upper;
-//             }
-//             TargetRegister16::DE => {
-//                 self.registers.e = lower;
-//                 self.registers.d = upper;
-//             }
-//             TargetRegister16::BC => {
-//                 self.registers.c = lower;
-//                 self.registers.b = upper;
-//             }
-//             _ => {
-//                 panic!("{:?} unimplemented LDU16", target);
-//             }
-//         }
 
 //         self.pc = self.pc.wrapping_add(3);
 //         cycles_used += self.sync();

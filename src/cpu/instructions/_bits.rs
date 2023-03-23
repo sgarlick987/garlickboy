@@ -1,19 +1,19 @@
 use super::TargetRegister8;
 use crate::cpu::GameboyChip;
 
-pub fn rcla() -> Vec<Box<dyn FnMut(&mut GameboyChip)>> {
-    let inst = Box::new(|cpu: &mut GameboyChip| {
-        let new_a = cpu.registers.a << 1;
+// pub fn rcla() -> Vec<Box<dyn FnMut(&mut GameboyChip)>> {
+//     let inst = Box::new(|cpu: &mut GameboyChip| {
+//         let new_a = cpu.registers.a << 1;
 
-        cpu.registers.flags.carry = cpu.registers.a >> 7 == 1;
-        cpu.registers.flags.half_carry = false;
-        cpu.registers.flags.negative = false;
-        cpu.registers.flags.zero = false;
-        cpu.registers.a = new_a;
-    });
+//         cpu.registers.flags.carry = cpu.registers.a >> 7 == 1;
+//         cpu.registers.flags.half_carry = false;
+//         cpu.registers.flags.negative = false;
+//         cpu.registers.flags.zero = false;
+//         cpu.registers.a = new_a;
+//     });
 
-    vec![inst]
-}
+//     vec![inst]
+// }
 
 // impl GameboyChip {
 //     // SET 7,(HL) - 0xFE
@@ -96,36 +96,6 @@ pub fn rcla() -> Vec<Box<dyn FnMut(&mut GameboyChip)>> {
 //         self.registers.flags.half_carry = false;
 //         self.registers.flags.carry = false;
 //         self.registers.flags.zero = swapped == 0;
-
-//         self.pc = self.pc.wrapping_add(2);
-//     }
-//     // BIT 2,B - 0x50
-//     // Length: 2 bytes
-//     // FlagsZero	dependent
-//     // Negative	unset
-//     // Half Carry	set
-//     // Carry	unmodified
-//     // Group: x8/rsb
-//     // Timingwithout branch (8t)
-//     // fetch	(0xCB)
-//     // fetch
-//     pub fn bit(&mut self, bit: &u8, target: &TargetRegister8) {
-//         //fetch
-
-//         let check = 1 << bit;
-
-//         //fetch
-//         match target {
-//             TargetRegister8::A => self.registers.flags.zero = self.registers.a & check == 0,
-//             TargetRegister8::B => self.registers.flags.zero = self.registers.b & check == 0,
-//             TargetRegister8::C => self.registers.flags.zero = self.registers.c & check == 0,
-//             TargetRegister8::D => self.registers.flags.zero = self.registers.d & check == 0,
-//             TargetRegister8::E => self.registers.flags.zero = self.registers.e & check == 0,
-//             TargetRegister8::H => self.registers.flags.zero = self.registers.h & check == 0,
-//             TargetRegister8::L => self.registers.flags.zero = self.registers.l & check == 0,
-//         }
-//         self.registers.flags.negative = false;
-//         self.registers.flags.half_carry = true;
 
 //         self.pc = self.pc.wrapping_add(2);
 //     }

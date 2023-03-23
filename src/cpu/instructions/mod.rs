@@ -1,4 +1,6 @@
-pub mod bitwise;
+use super::GameboyChip;
+
+pub mod bits;
 pub mod control;
 pub mod execute;
 pub mod jump;
@@ -95,12 +97,12 @@ pub enum Instruction {
     LDIAHL,
     LDDHLA,
     LDDAHL,
-    LDAFF00U16,
-    LDFF00U16A,
-    LDAFF00U8,
-    LDFF00U8A,
-    LDAFF00C,
-    LDFF00CA,
+    LDHAU16,
+    LDHU16A,
+    LDHAU8,
+    LDHU8A,
+    LDHAC,
+    LDHCA,
     LDHLSPU8,
     LDSPHL,
     LDSP,
@@ -153,7 +155,7 @@ pub enum RstVector {
     H38,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum Comparison {
     NONZERO,
     NOCARRY,
@@ -168,7 +170,7 @@ pub enum TargetPointer {
     HL,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TargetRegister8 {
     A,
     B,
@@ -179,7 +181,7 @@ pub enum TargetRegister8 {
     L,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TargetRegister16 {
     AF,
     BC,
@@ -196,7 +198,7 @@ pub enum TargetPushPop {
     HL,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub enum TargetIncDec {
     A,
     B,
@@ -737,38 +739,38 @@ impl Instruction {
             0xDE => Instruction::SBCU8,                     // SBC A, u8
             0xDF => Instruction::RST(RstVector::H18),       // RST 0x18
 
-            0xE0 => Instruction::LDFF00U8A, // LD (FF00+u8), A
+            0xE0 => Instruction::LDHU8A, // LD (FF00+u8), A
             0xE1 => Instruction::POP(TargetPushPop::HL), // POP HL
-            0xE2 => Instruction::LDFF00CA,  // LD (FF00 + C), A
+            0xE2 => Instruction::LDHCA,  // LD (FF00 + C), A
             0xE3 => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xE4 => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xE5 => Instruction::PUSH(TargetPushPop::HL), // PUSH HL
-            0xE6 => Instruction::ANDU8,     // AND A, u8
+            0xE6 => Instruction::ANDU8,  // AND A, u8
             0xE7 => Instruction::RST(RstVector::H20), // RST 0x20
-            0xE8 => Instruction::ADDSP,     // ADD SP, i8
-            0xE9 => Instruction::JPHL,      // JP HL
-            0xEA => Instruction::LDU16A,    // LD u16, A
+            0xE8 => Instruction::ADDSP,  // ADD SP, i8
+            0xE9 => Instruction::JPHL,   // JP HL
+            0xEA => Instruction::LDU16A, // LD u16, A
             0xEB => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xEC => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xED => panic!("byte {:X} has no assigned op", byte), // unassigned
-            0xEE => Instruction::XORU8,     // XOR A, u8
+            0xEE => Instruction::XORU8,  // XOR A, u8
             0xEF => Instruction::RST(RstVector::H28), // RST 0x28,
 
-            0xF0 => Instruction::LDAFF00U8, // LD A, (FF00+u8)
+            0xF0 => Instruction::LDHAU8, // LD A, (FF00+u8)
             0xF1 => Instruction::POP(TargetPushPop::AF), // POP AF
-            0xF2 => Instruction::LDAFF00C,  // LD A, (FF00+C)
-            0xF3 => Instruction::DI,        // DI
+            0xF2 => Instruction::LDHAC,  // LD A, (FF00+C)
+            0xF3 => Instruction::DI,     // DI
             0xF4 => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xF5 => Instruction::PUSH(TargetPushPop::AF), // PUSH AF
-            0xF6 => Instruction::ORU8,      // OR A, u8
+            0xF6 => Instruction::ORU8,   // OR A, u8
             0xF7 => Instruction::RST(RstVector::H30), // RST 0x30
-            0xF8 => Instruction::LDHLSPU8,  // LD HL, SP+i8
-            0xF9 => Instruction::LDSPHL,    // LD SP, HL
-            0xFA => Instruction::LDAU16,    // LD A, u16
-            0xFB => Instruction::EI,        // EI
+            0xF8 => Instruction::LDHLSPU8, // LD HL, SP+i8
+            0xF9 => Instruction::LDSPHL, // LD SP, HL
+            0xFA => Instruction::LDAU16, // LD A, u16
+            0xFB => Instruction::EI,     // EI
             0xFC => panic!("byte {:X} has no assigned op", byte), // unassigned
             0xFD => panic!("byte {:X} has no assigned op", byte), // unassigned
-            0xFE => Instruction::CPU8,      // CP A, u8
+            0xFE => Instruction::CPU8,   // CP A, u8
             0xFF => Instruction::RST(RstVector::H38), // RST 0x38
         }
     }

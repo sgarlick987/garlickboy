@@ -4,12 +4,13 @@ use sdl2::{
     pixels::{Color, PixelFormat},
     rect::Rect,
     render::{Canvas, Texture, TextureCreator},
-    Sdl,
+    EventPump, Sdl,
 };
 
 pub const VIDEO_SCALE: u32 = 4;
 
 pub struct Display {
+    sdl: Sdl,
     canvas: Canvas<sdl2::video::Window>,
     texture_creator: TextureCreator<sdl2::video::WindowContext>,
     texture: RefCell<Texture<'static>>,
@@ -19,11 +20,11 @@ pub struct Display {
 
 impl Display {
     pub fn present(&mut self) {
-        // let mut texture = self.texture.borrow_mut();
-        // texture
-        //     .update(None, self.data_raw(), (self.width * 4) as usize)
-        //     .expect("failed to update screen texture");
-        // self.canvas.copy(&texture, None, None).unwrap();
+        let mut texture = self.texture.borrow_mut();
+        texture
+            .update(None, self.data_raw(), (self.width * 4) as usize)
+            .expect("failed to update screen texture");
+        self.canvas.copy(&texture, None, None).unwrap();
         self.canvas.present();
     }
 
@@ -41,8 +42,11 @@ impl Display {
         unsafe { std::slice::from_raw_parts(self.data.as_ptr() as *const u8, self.data.len() * 4) }
     }
 
-    pub fn new() -> Display {
-        let sdl = sdl2::init().expect("failed to init sdl2");
+    pub fn event_pump(&mut self) -> EventPump {
+        self.sdl.event_pump().unwrap()
+    }
+
+    pub fn new(sdl: Sdl) -> Display {
         let video = sdl.video().expect("failed to get video subsystem");
         let window = video
             .window("GarlickBoy", 256 * VIDEO_SCALE, 256 * VIDEO_SCALE)
@@ -64,6 +68,7 @@ impl Display {
         let texture = unsafe { std::mem::transmute::<_, Texture<'static>>(texture) };
 
         Display {
+            sdl,
             canvas,
             texture_creator,
             texture: RefCell::new(texture),

@@ -12,7 +12,7 @@ use self::{
 };
 
 impl GameboyChip {
-    pub fn fetch(&mut self) -> Vec<Box<dyn FnMut(&mut GameboyChip)>> {
+    pub fn fetch(&mut self) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         let mut instruction_byte = self.bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == BYTE_PREFIX;
@@ -23,11 +23,12 @@ impl GameboyChip {
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
+        println!("{:?} pc {:x}", instruction, self.pc);
         instruction.fetch()
     }
 
-    pub fn execute(&mut self, mut inst: Box<dyn FnMut(&mut GameboyChip)>) {
-        inst(self);
+    pub fn execute(&mut self, step: Box<dyn FnOnce(&mut GameboyChip)>) {
+        step(self);
     }
 
     pub fn update_display(&mut self, display: &mut Display) {
@@ -80,10 +81,6 @@ impl GameboyChip {
         }
     }
 
-    // pub fn render(&mut self) {
-    //     self.bus.render();
-    // }
-
     pub fn write_byte(&mut self, address: u16, byte: u8) {
         match address {
             IF_ADDRESS => self.interrupt_handler.set_flags(byte),
@@ -110,10 +107,6 @@ impl GameboyChip {
 
     pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
         self.bus.write_bytes(address as usize, bytes);
-    }
-
-    pub fn write_bios(&mut self, bytes: [u8; 0x100]) {
-        self.bus.write_boot(bytes);
     }
 
     // fn sync(&mut self) -> u8 {

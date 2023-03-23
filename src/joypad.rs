@@ -2,10 +2,11 @@ use std::process;
 
 use sdl2::{
     event::{self, Event},
-    keyboard::Keycode,
+    keyboard::{KeyboardState, Keycode},
     EventPump,
 };
 
+#[derive(Debug)]
 pub struct Joypad {
     start: bool,
     select: bool,
@@ -15,11 +16,10 @@ pub struct Joypad {
     right: bool,
     a: bool,
     b: bool,
-    event_pump: EventPump,
 }
 
 impl Joypad {
-    pub fn new(event_pump: EventPump) -> Joypad {
+    pub fn new() -> Joypad {
         Joypad {
             start: false,
             select: false,
@@ -29,20 +29,21 @@ impl Joypad {
             right: false,
             a: false,
             b: false,
-            event_pump,
         }
     }
+}
 
-    pub fn read(&mut self) {
-        for event in self.event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => process::exit(0),
-                _ => {}
-            }
+impl std::convert::From<KeyboardState<'_>> for Joypad {
+    fn from(keyboard_state: KeyboardState<'_>) -> Joypad {
+        Joypad {
+            start: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::V),
+            select: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::C),
+            up: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Up),
+            down: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Down),
+            left: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left),
+            right: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Right),
+            a: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::A),
+            b: keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::S),
         }
     }
 }

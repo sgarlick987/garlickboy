@@ -4,12 +4,16 @@ use std::{fs::File, io::Read, str};
 
 pub struct Bios {
     pub data: [u8; 0x100],
+    pub mapped: bool,
 }
 
 pub fn load_bios(filename: &str) -> Bios {
     let bytes = load_bios_bytes(filename);
 
-    Bios { data: bytes }
+    Bios {
+        data: bytes,
+        mapped: true,
+    }
 }
 
 fn load_bios_bytes(filename: &str) -> [u8; 0x100] {
