@@ -9,12 +9,18 @@ use crate::cpu::GameboyChip;
 const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
 const GB_ROM: &str = "./data/Tetris.gb";
 
+struct EventTimers {
+    ly: u8,
+    vblank: u8,
+}
+
 pub struct Emu {
     chip: GameboyChip,
     fps_manager: FPSManager,
     display: Display,
     joypad: Joypad,
     event_pump: EventPump,
+    event_timers: EventTimers,
     rom: Rom,
 }
 
@@ -34,6 +40,7 @@ impl Emu {
         let gpu = Box::new(PPU::new());
         let bus = Box::new(AddressBus::new(gpu, bios));
         let chip = GameboyChip::new(bus);
+        let event_timers = EventTimers { ly: 0, vblank: 0 };
 
         let mut emu = Emu {
             fps_manager,
@@ -41,6 +48,7 @@ impl Emu {
             chip,
             rom,
             event_pump,
+            event_timers,
             joypad,
         };
 
@@ -79,6 +87,19 @@ impl Emu {
         self.fps_manager.delay();
     }
 
+    fn update_timers(&mut self) {
+        if self.chip.lcd_is_enabled() {
+            self.event_timers.ly += 1;
+            if self.event_timers.ly == 114 {
+                self.event_timers.ly = 0;
+                self.chip.inc_ly();
+            }
+        } else {
+            self.event_timers.ly = 0;
+            self.event_timers.vblank = 0;
+        }
+    }
+
     pub fn run(&mut self) {
         self.init_display();
 
@@ -98,10 +119,12 @@ impl Emu {
                 }
 
                 self.chip.execute(step);
+                self.update_timers();
                 cycles_used += 1;
             }
         }
     }
+
     fn write_rom(&mut self) {
         self.chip.write_bytes(0, self.rom.data.to_vec());
     }

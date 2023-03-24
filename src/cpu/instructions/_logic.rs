@@ -123,33 +123,6 @@ use crate::utils::*;
 //         self.sync()
 //     }
 
-//     // CP A,(HL) - 0xBE
-//     // Length: 1 byte
-//     // FlagsZero	dependent
-//     // Negative	set
-//     // Half Carry	dependent
-//     // Carry	dependent
-//     // Group: x8/alu
-//     // Timingwithout branch (8t)
-//     // fetch
-//     // read	(HL)
-//     pub fn cp_hl(&mut self) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //read
-//         let hl = self.registers.get_hl();
-//         let byte = self.read_byte(hl);
-//         let a = self.registers.a;
-//         self.registers.flags.negative = true;
-//         self.registers.flags.zero = a == byte;
-//         self.registers.flags.carry = a < byte;
-//         self.registers.flags.half_carry = bytes_half_carry(a, byte);
-
-//         self.pc = self.pc.wrapping_add(1);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
 
 //     // CPL - 0x2F
 //     // Length: 1 byte
@@ -227,54 +200,6 @@ use crate::utils::*;
 //         cycles_used
 //     }
 
-//     // ADD A,(HL) - 0x86
-//     // Length: 1 byte
-//     // FlagsZero	dependent
-//     // Negative	unset
-//     // Half Carry	dependent
-//     // Carry	dependent
-//     // Group: x8/alu
-//     // Timingwithout branch (8t)
-//     // fetch
-//     // read	(HL)
-//     pub fn add_hl(&mut self) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //read
-//         let hl = self.registers.get_hl();
-//         let byte = self.read_byte(hl);
-//         self.registers.a = self._add(byte, false);
-
-//         self.pc = self.pc.wrapping_add(1);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
-
-//     // SUB A,B - 0x90
-//     // Length: 1 byte
-//     // FlagsZero	dependent
-//     // Negative	set
-//     // Half Carry	dependent
-//     // Carry	dependent
-//     // Group: x8/alu
-//     // Timingwithout branch (4t)
-//     // fetch
-//     pub fn sub_r8(&mut self, target: &TargetRegister8) -> u8 {
-//         //fetch
-//         self.registers.a = match target {
-//             TargetRegister8::A => self._sub(self.registers.a, false),
-//             TargetRegister8::B => self._sub(self.registers.b, false),
-//             TargetRegister8::C => self._sub(self.registers.c, false),
-//             TargetRegister8::D => self._sub(self.registers.d, false),
-//             TargetRegister8::E => self._sub(self.registers.e, false),
-//             TargetRegister8::H => self._sub(self.registers.h, false),
-//             TargetRegister8::L => self._sub(self.registers.l, false),
-//         };
-
-//         self.pc = self.pc.wrapping_add(1);
-//         self.sync()
-//     }
 
 //     // ADD A,B - 0x80
 //     // Length: 1 byte

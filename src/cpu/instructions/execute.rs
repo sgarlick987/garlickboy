@@ -38,12 +38,15 @@ impl Instruction {
             Instruction::LDR8R8(target, source) => ldr8r8::new(target, source),
 
             //logic
-            Instruction::XORR8(target) => xorr8::new(target),
+            Instruction::XORR8(target) => xor_r8::new(target),
             Instruction::INC(target) => inc::new(target),
             Instruction::DEC(target) => dec::new(target),
             Instruction::PUSH(target) => push::new(target),
             Instruction::POP(target) => pop::new(target),
-            Instruction::CPU8 => cpu8::new(),
+            Instruction::CPU8 => cp_u8::new(),
+            Instruction::CPHL => cp_hl::new(),
+            Instruction::SUBR8(target) => sub_r8::new(target),
+            Instruction::ADDHL => add_hl::new(),
 
             //bits
             Instruction::BIT(bit, target) => bit::new(bit, target),
@@ -54,9 +57,7 @@ impl Instruction {
 
             // Instruction::RLCA => bitwise::rcla(),
             //             Instruction::ADCR8(target) => cpu.adc_r8(target),
-            //             Instruction::ADDHL => cpu.add_hl(),
             //             Instruction::ADDR8(target) => cpu.add_r8(target),
-            //             Instruction::SUBR8(target) => cpu.sub_r8(target),
             //             Instruction::INC(target) => cpu.inc(target),
             //             Instruction::LDHLU8 => cpu.ld_hl_u8(),
             //             Instruction::LDAPTR(target) => cpu.ld_a_ptr(target),
@@ -64,7 +65,6 @@ impl Instruction {
             //             Instruction::LDFF00CA => cpu.ld_ff00c_a(),
             //             Instruction::LDDAHL => cpu.ldd_a_hl(),
             //             Instruction::LDIAHL => cpu.ldi_a_hl(),
-            //             Instruction::CPHL => cpu.cp_hl(),
             //             Instruction::CPL => cpu.cpl(),
             //             Instruction::ORR8(target) => cpu.or_r8(target),
             //             Instruction::ANDU8 => cpu.and_u8(),

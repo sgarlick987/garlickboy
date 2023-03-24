@@ -13,6 +13,8 @@ pub trait GPU {
     fn read_vram(&self, address: usize) -> u8;
     fn read_registers(&mut self, address: usize) -> u8;
     fn update_display(&mut self, display: &mut Display);
+    fn inc_ly(&mut self);
+    fn lcd_is_enabled(&mut self) -> bool;
 }
 
 pub struct PPU {
@@ -21,7 +23,7 @@ pub struct PPU {
     pub scrollx: u8,
     pub scrolly: u8,
     pub ly: u8,
-    pub lcd_on: bool,
+    pub lcd_enabled: bool,
 }
 
 pub const PPU_REGISTERS: [usize; 5] = [0xFF40, 0xFF42, 0xFF43, 0xFF44, 0xFF47];
@@ -49,8 +51,12 @@ impl PPU {
 }
 
 impl GPU for PPU {
+    fn lcd_is_enabled(&mut self) -> bool {
+        self.lcd_enabled
+    }
+
     fn update_display(&mut self, display: &mut Display) {
-        if !self.lcd_on {
+        if !self.lcd_enabled {
             display.off();
             return;
         }
@@ -68,7 +74,7 @@ impl GPU for PPU {
             0xFF42 => self.scrolly,
             0xFF40 => {
                 let mut lcd = 0;
-                if self.lcd_on {
+                if self.lcd_enabled {
                     lcd |= 1 << 7;
                 }
                 lcd
@@ -90,10 +96,10 @@ impl GPU for PPU {
             }
             0xFF40 => {
                 let lcd_on = byte >> 7 == 1;
-                if !self.lcd_on && lcd_on {
+                if !self.lcd_enabled && lcd_on {
                     self.ly = 0;
                 }
-                self.lcd_on = lcd_on;
+                self.lcd_enabled = lcd_on;
             }
             _ => panic!("unimplemented write gpu register {:x}", address),
         }
@@ -105,6 +111,18 @@ impl GPU for PPU {
 
     fn read_vram(&self, address: usize) -> u8 {
         self.vram[address]
+    }
+
+    fn inc_ly(&mut self) {
+        if !self.lcd_enabled {
+            panic!("gpu inc_ly should not be called while lcd is not enable");
+        }
+
+        if self.ly == 153 {
+            self.ly = 0;
+        } else {
+            self.ly += 1;
+        }
     }
 
     // fn sync(&mut self) -> u8 {
@@ -132,7 +150,7 @@ impl PPU {
             scrollx: 0,
             scrolly: 0,
             ly: 0,
-            lcd_on: false,
+            lcd_enabled: false,
         }
     }
 

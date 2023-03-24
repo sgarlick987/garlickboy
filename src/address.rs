@@ -6,6 +6,8 @@ pub trait Bus {
     fn write_byte(&mut self, address: u16, byte: u8);
     fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
     fn update_display(&mut self, display: &mut Display);
+    fn inc_ly(&mut self);
+    fn lcd_is_enabled(&mut self) -> bool;
 }
 
 pub struct AddressBus {
@@ -27,6 +29,14 @@ impl AddressBus {
 impl Bus for AddressBus {
     fn update_display(&mut self, display: &mut Display) {
         self.gpu.update_display(display);
+    }
+
+    fn inc_ly(&mut self) {
+        self.gpu.inc_ly();
+    }
+
+    fn lcd_is_enabled(&mut self) -> bool {
+        self.gpu.lcd_is_enabled()
     }
 
     fn read_byte(&mut self, address: u16) -> u8 {

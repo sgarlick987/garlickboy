@@ -1,34 +1,24 @@
-//     // CP A,u8 - 0xFE
-//     // Length: 2 bytes
-//     // FlagsZero	dependent
-//     // Negative	set
-//     // Half Carry	dependent
-//     // Carry	dependent
-//     // Group: x8/alu
-//     // Timingwithout branch (8t)
-//     // fetch
-//     // read	u8
-//     pub fn cp_u8(&mut self) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //read
-
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
-
 use std::collections::VecDeque;
 
 use crate::{cpu::GameboyChip, utils::bytes_half_carry};
 
+// CP A,u8 - 0xFE
+// Length: 2 bytes
+// FlagsZero	dependent
+// Negative	set
+// Half Carry	dependent
+// Carry	dependent
+// Group: x8/alu
+// Timingwithout branch (8t)
+// fetch
+// read	u8
 struct Inst {
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
 
 pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     let mut inst = Inst {
-        executions: VecDeque::with_capacity(1),
+        executions: VecDeque::with_capacity(2),
     };
 
     inst.executions

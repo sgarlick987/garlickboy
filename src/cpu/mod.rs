@@ -23,7 +23,7 @@ impl GameboyChip {
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
-        println!("{:?} pc {:x}", instruction, self.pc);
+        // println!("{:?} pc {:x}", instruction, self.pc);
         instruction.fetch()
     }
 
@@ -33,6 +33,14 @@ impl GameboyChip {
 
     pub fn update_display(&mut self, display: &mut Display) {
         self.bus.update_display(display);
+    }
+
+    pub fn inc_ly(&mut self) {
+        self.bus.inc_ly();
+    }
+
+    pub fn lcd_is_enabled(&mut self) -> bool {
+        self.bus.lcd_is_enabled()
     }
 }
 
