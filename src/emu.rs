@@ -1,10 +1,12 @@
 use std::process;
 
-use crate::{address::*, bios::*, display::Display, gpu::PPU, joypad::Joypad, rom::*};
+use crate::{
+    bios::*, chip::address::AddressBus, chip::gpu::PPU, display::Display, joypad::Joypad, rom::*,
+};
 
 use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPump};
 
-use crate::cpu::GameboyChip;
+use crate::chip::GameboyChip;
 
 const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
 const GB_ROM: &str = "./data/Tetris.gb";

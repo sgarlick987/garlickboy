@@ -1,0 +1,16 @@
+pub mod adc_r8;
+pub mod add_hl;
+pub mod add_r16;
+pub mod add_r8;
+pub mod add_u8;
+pub mod and_r8;
+pub mod and_u8;
+pub mod cp_hl;
+pub mod cp_r8;
+pub mod cp_u8;
+pub mod cpl;
+pub mod dec;
+pub mod inc;
+pub mod or_r8;
+pub mod sub_r8;
+pub mod xor_r8;
