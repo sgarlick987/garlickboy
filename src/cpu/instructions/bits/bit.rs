@@ -56,7 +56,7 @@ pub fn new(
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let check = 1 << inst.bit;
-            chip.registers.flags.zero = chip.get_register_from_enum(&inst.target) & check == 0;
+            chip.registers.flags.zero = chip.registers.get_from_enum(&inst.target) & check == 0;
             chip.registers.flags.negative = false;
             chip.registers.flags.half_carry = true;
 

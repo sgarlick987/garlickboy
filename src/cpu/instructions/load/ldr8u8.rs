@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::cpu::{instructions::TargetRegister8, GameboyChip};
 
-// LD B,u8 - 0x06
+// LD D,u8 - 0x16
 // Length: 2 bytes
 // FlagsZero	unmodified
 // Negative	unmodified
@@ -11,7 +11,7 @@ use crate::cpu::{instructions::TargetRegister8, GameboyChip};
 // Group: x8/lsm
 // Timingwithout branch (8t)
 // fetch
-// read	u8->B
+// read	u8->D
 struct Inst {
     target: TargetRegister8,
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,

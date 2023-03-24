@@ -10,10 +10,10 @@ struct Inst {
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
 
-// INC B - 0x04
+// DEC B - 0x05
 // Length: 1 byte
 // FlagsZero	dependent
-// Negative	unset
+// Negative	set
 // Half Carry	dependent
 // Carry	unmodified
 // Group: x8/alu
@@ -37,7 +37,7 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut 
                 TargetIncDec::L => chip.registers.get_from_enum(&TargetRegister8::L),
                 _ => panic!("invalid register for inc new_r8"),
             }
-            .wrapping_add(1);
+            .wrapping_sub(1);
 
             match inst.target {
                 TargetIncDec::A => chip.registers.set_from_enum(&TargetRegister8::A, value),
@@ -51,7 +51,7 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut 
             }
 
             chip.registers.flags.zero = value == 0;
-            chip.registers.flags.negative = false;
+            chip.registers.flags.negative = true;
             //TODO: half carry
             chip.pc = chip.pc.wrapping_add(1);
         }));
@@ -59,7 +59,7 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut 
     Box::new(inst)
 }
 
-// INC BC - 0x03
+// DEC BC - 0x0B
 // Length: 1 byte
 // FlagsZero	unmodified
 // Negative	unmodified
@@ -86,18 +86,18 @@ fn new_r16(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut
             match inst.target {
                 TargetIncDec::BC => {
                     chip.registers
-                        .set_bc(chip.registers.get_bc().wrapping_add(1));
+                        .set_bc(chip.registers.get_bc().wrapping_sub(1));
                 }
                 TargetIncDec::DE => {
                     chip.registers
-                        .set_de(chip.registers.get_de().wrapping_add(1));
+                        .set_de(chip.registers.get_de().wrapping_sub(1));
                 }
                 TargetIncDec::HL => {
                     chip.registers
-                        .set_hl(chip.registers.get_hl().wrapping_add(1));
+                        .set_hl(chip.registers.get_hl().wrapping_sub(1));
                 }
                 TargetIncDec::SP => {
-                    chip.registers.sp = chip.registers.sp.wrapping_add(1);
+                    chip.registers.sp = chip.registers.sp.wrapping_sub(1);
                 }
                 _ => panic!("invalid register for inc new_r16"),
             }
@@ -107,11 +107,11 @@ fn new_r16(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut
     Box::new(inst)
 }
 
-// INC (HL) - 0x34
+// DEC (HL) - 0x35
 // Length: 1 byte
 // Flags
 // Zero	dependent
-// Negative	unset
+// Negative	set
 // Half Carry	dependent
 // Carry	unmodified
 // Group: x8/alu
@@ -134,7 +134,7 @@ fn new_ptr() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let address = chip.registers.get_hl();
-            let byte = chip.read_byte(address).wrapping_add(1);
+            let byte = chip.read_byte(address).wrapping_sub(1);
             chip.write_byte(address, byte);
             chip.pc = chip.pc.wrapping_add(1);
         }));

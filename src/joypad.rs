@@ -1,12 +1,5 @@
-use std::process;
+use sdl2::keyboard::KeyboardState;
 
-use sdl2::{
-    event::{self, Event},
-    keyboard::{KeyboardState, Keycode},
-    EventPump,
-};
-
-#[derive(Debug)]
 pub struct Joypad {
     start: bool,
     select: bool,

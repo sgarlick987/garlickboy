@@ -131,40 +131,6 @@ use crate::cpu::GameboyChip;
 //         self.pc = self.pc.wrapping_add(2);
 //     }
 
-//     // RL C - 0x11
-//     // Length: 2 bytes
-//     // FlagsZero	dependent
-//     // Negative	unset
-//     // Half Carry	unset
-//     // Carry	dependent
-//     // Group: x8/rsb
-//     // Timingwithout branch (8t)
-//     // fetch	(0xCB)
-//     // fetch
-//     pub fn rl(&mut self, target: &TargetRegister8) {
-//         //fetch
-
-//         //fetch
-//         match target {
-//             TargetRegister8::C => {
-//                 let mut new_c = self.registers.c << 1;
-//                 if self.registers.flags.carry {
-//                     new_c |= 1;
-//                 }
-//                 self.registers.flags.carry = self.registers.c >> 7 == 1;
-//                 self.registers.flags.zero = new_c == 0;
-//                 self.registers.c = new_c;
-//             }
-//             _ => {
-//                 panic!("{:?} unimplemented RL Instruction", target);
-//             }
-//         }
-//         self.registers.flags.half_carry = false;
-//         self.registers.flags.negative = false;
-
-//         self.pc = self.pc.wrapping_add(2);
-//     }
-
 //     // RLCA - 0x07
 //     // Length: 1 byte
 //     // Flags
@@ -188,31 +154,6 @@ use crate::cpu::GameboyChip;
 //         });
 
 //         inst
-//     }
-
-//     // RLA - 0x17
-//     // Length: 1 byte
-//     // FlagsZero	unset
-//     // Negative	unset
-//     // Half Carry	unset
-//     // Carry	dependent
-//     // Group: x8/rsb
-//     // Timingwithout branch (4t)
-//     // fetch
-//     pub fn rla(&mut self) {
-//         //fetch
-//         let mut new_a = self.registers.a << 1;
-//         if self.registers.flags.carry {
-//             new_a |= 1;
-//         }
-//         self.registers.flags.carry = self.registers.a >> 7 == 1;
-//         self.registers.flags.half_carry = false;
-//         self.registers.flags.negative = false;
-//         self.registers.flags.zero = false;
-//         self.registers.a = new_a;
-
-//         self.pc = self.pc.wrapping_add(1);
-//         self.sync()
 //     }
 
 //     // SLA B - 0x20

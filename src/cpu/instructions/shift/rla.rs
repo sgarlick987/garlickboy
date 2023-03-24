@@ -1,36 +1,39 @@
 use std::collections::VecDeque;
 
-use crate::cpu::{instructions::TargetRegister8, GameboyChip};
+use crate::cpu::GameboyChip;
 
-// XOR A,B - 0xA8
+// RLA - 0x17
 // Length: 1 byte
-// FlagsZero	dependent
+// FlagsZero	unset
 // Negative	unset
 // Half Carry	unset
-// Carry	unset
-// Group: x8/alu
+// Carry	dependent
+// Group: x8/rsb
 // Timingwithout branch (4t)
 // fetch
 struct Inst {
-    target: TargetRegister8,
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
 
-pub fn new(
-    target: &TargetRegister8,
-) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
+pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     let mut inst = Inst {
-        target: target.clone(),
         executions: VecDeque::with_capacity(1),
     };
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            chip.registers.a ^= chip.registers.get_from_enum(&inst.target);
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.negative = false;
+            let register = chip.registers.a;
+            let mut value = register << 1;
+            if chip.registers.flags.carry {
+                value |= 1;
+            }
+            chip.registers.a = value;
+
+            chip.registers.flags.carry = register >> 7 == 1;
+            chip.registers.flags.zero = false;
             chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
+            chip.registers.flags.negative = false;
+
             chip.pc = chip.pc.wrapping_add(1);
         }));
 

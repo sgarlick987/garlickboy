@@ -2,38 +2,36 @@ use std::collections::VecDeque;
 
 use crate::cpu::{instructions::TargetRegister8, GameboyChip};
 
-// LD B,u8 - 0x06
-// Length: 2 bytes
+// LD B,B - 0x40
+// Length: 1 byte
 // FlagsZero	unmodified
 // Negative	unmodified
 // Half Carry	unmodified
 // Carry	unmodified
 // Group: x8/lsm
-// Timingwithout branch (8t)
+// Timingwithout branch (4t)
 // fetch
-// read	u8->B
 struct Inst {
     target: TargetRegister8,
+    source: TargetRegister8,
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
 
 pub fn new(
     target: &TargetRegister8,
+    source: &TargetRegister8,
 ) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     let mut inst = Inst {
         target: target.clone(),
-        executions: VecDeque::with_capacity(2),
+        source: source.clone(),
+        executions: VecDeque::with_capacity(1),
     };
-
-    inst.executions.push_back(Box::new(|_: &mut GameboyChip| {
-        //fetch
-    }));
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            let byte = chip.read_byte_pc_lower();
-            chip.registers.set_from_enum(&inst.target, byte);
-            chip.pc = chip.pc.wrapping_add(2);
+            let value = chip.registers.get_from_enum(&inst.source);
+            chip.registers.set_from_enum(&inst.target, value);
+            chip.pc = chip.pc.wrapping_add(1);
         }));
 
     Box::new(inst)

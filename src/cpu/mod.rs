@@ -57,30 +57,6 @@ impl GameboyChip {
         }
     }
 
-    pub fn get_register_from_enum(&mut self, target: &TargetRegister8) -> u8 {
-        match target {
-            TargetRegister8::A => self.registers.a,
-            TargetRegister8::B => self.registers.b,
-            TargetRegister8::C => self.registers.c,
-            TargetRegister8::D => self.registers.d,
-            TargetRegister8::E => self.registers.e,
-            TargetRegister8::H => self.registers.h,
-            TargetRegister8::L => self.registers.l,
-        }
-    }
-
-    pub fn set_register_from_enum(&mut self, target: &TargetRegister8, value: u8) {
-        match target {
-            TargetRegister8::A => self.registers.a = value,
-            TargetRegister8::B => self.registers.b = value,
-            TargetRegister8::C => self.registers.c = value,
-            TargetRegister8::D => self.registers.d = value,
-            TargetRegister8::E => self.registers.e = value,
-            TargetRegister8::H => self.registers.h = value,
-            TargetRegister8::L => self.registers.l = value,
-        }
-    }
-
     pub fn write_byte(&mut self, address: u16, byte: u8) {
         match address {
             IF_ADDRESS => self.interrupt_handler.set_flags(byte),
@@ -109,44 +85,22 @@ impl GameboyChip {
         self.bus.write_bytes(address as usize, bytes);
     }
 
+    fn push(&mut self, byte: u8) {
+        self.registers.sp = self.registers.sp.wrapping_sub(1);
+        self.write_byte(self.registers.sp, byte);
+    }
+
+    fn pop(&mut self) -> u8 {
+        let byte = self.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+        byte
+    }
+
     // fn sync(&mut self) -> u8 {
     //     let ly = self.bus.sync();
     //     if ly == 145 {
     //         self.interrupt_handler.flag_vblank();
     //     }
     //     4
-    // }
-
-    // pub fn step_old(&mut self) -> u8 {
-    //     let mut instruction_byte = self.bus.read_byte(self.pc);
-
-    //     let prefixed = instruction_byte == BYTE_PREFIX;
-    //     if prefixed {
-    //         instruction_byte = self.bus.read_byte(self.pc.wrapping_add(1));
-    //     }
-    //     let instruction = Instruction::from_byte(instruction_byte, prefixed);
-    //     if instruction == Instruction::UNIMPLEMENTED {
-    //         panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
-    //     }
-    //     if self.pc == 0x02cd {
-    //         self.print = false;
-    //     }
-    //     if self.print {
-    //         println!("pc: {:x}, inst: {:?}", self.pc, instruction);
-    //     }
-    //     let interrupt_address = self.interrupt_handler.handle();
-    //     if interrupt_address != 0x0000 {
-    //         self.sync();
-    //         self.sync();
-    //         let (upper, lower) = split_bytes(self.pc);
-    //         self._push(upper);
-    //         self.sync();
-    //         self._push(lower);
-    //         self.sync();
-    //         self.pc = interrupt_address;
-    //         self.sync();
-    //         return 20;
-    //     }
-    //     instruction.execute(self)
     // }
 }

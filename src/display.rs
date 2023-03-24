@@ -2,7 +2,6 @@ use std::cell::RefCell;
 
 use sdl2::{
     pixels::{Color, PixelFormat},
-    rect::Rect,
     render::{Canvas, Texture, TextureCreator},
     EventPump, Sdl,
 };

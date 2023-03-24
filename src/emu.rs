@@ -10,7 +10,6 @@ const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
 const GB_ROM: &str = "./data/Tetris.gb";
 
 pub struct Emu {
-    cycles: u32,
     chip: GameboyChip,
     fps_manager: FPSManager,
     display: Display,
@@ -43,7 +42,6 @@ impl Emu {
             rom,
             event_pump,
             joypad,
-            cycles: 0,
         };
 
         emu.write_rom();

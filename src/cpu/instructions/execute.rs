@@ -4,6 +4,7 @@ use control::*;
 use jump::*;
 use load::*;
 use logic::*;
+use shift::*;
 
 impl Instruction {
     pub fn fetch(&self) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
@@ -23,16 +24,33 @@ impl Instruction {
             Instruction::JRF(comparison) => jrf::new(comparison),
 
             //load
+            Instruction::LDU16A => ldu16a::new(),
             Instruction::LDU16(target) => ldu16::new(target),
             Instruction::LDU8(target) => ldu8::new(target),
+            Instruction::LDR8U8(target) => ldr8u8::new(target),
             Instruction::LDDHLA => lddhla::new(),
+            Instruction::LDIHLA => ldihla::new(),
             Instruction::LDHCA => ldhca::new(),
+            Instruction::LDHLR8(target) => ldhlr8::new(target),
+            Instruction::LDHU8A => ldhu8a::new(),
+            Instruction::LDHAU8 => ldhau8::new(),
+            Instruction::LDAPTR(target) => ldaptr::new(target),
+            Instruction::LDR8R8(target, source) => ldr8r8::new(target, source),
 
             //logic
             Instruction::XORR8(target) => xorr8::new(target),
+            Instruction::INC(target) => inc::new(target),
+            Instruction::DEC(target) => dec::new(target),
+            Instruction::PUSH(target) => push::new(target),
+            Instruction::POP(target) => pop::new(target),
+            Instruction::CPU8 => cpu8::new(),
 
             //bits
             Instruction::BIT(bit, target) => bit::new(bit, target),
+
+            //shift
+            Instruction::RL(target) => rl::new(target),
+            Instruction::RLA => rla::new(),
 
             // Instruction::RLCA => bitwise::rcla(),
             //             Instruction::ADCR8(target) => cpu.adc_r8(target),
@@ -40,25 +58,12 @@ impl Instruction {
             //             Instruction::ADDR8(target) => cpu.add_r8(target),
             //             Instruction::SUBR8(target) => cpu.sub_r8(target),
             //             Instruction::INC(target) => cpu.inc(target),
-            //             Instruction::DEC(target) => cpu.dec(target),
             //             Instruction::LDHLU8 => cpu.ld_hl_u8(),
             //             Instruction::LDAPTR(target) => cpu.ld_a_ptr(target),
             //             Instruction::LDU8(target) => cpu.ld_u8(target),
             //             Instruction::LDFF00CA => cpu.ld_ff00c_a(),
-            //             Instruction::LDAFF00U8 => cpu.ld_a_ff00u8(),
-            //             Instruction::LDIHLA => cpu.ldi_hl_a(),
             //             Instruction::LDDAHL => cpu.ldd_a_hl(),
             //             Instruction::LDIAHL => cpu.ldi_a_hl(),
-            //             Instruction::LDHLR8(target) => cpu.ld_hl_r8(target),
-            //             Instruction::LDFF00U8A => cpu.ld_ff00u8_a(),
-            //             Instruction::PUSH(target) => cpu.push(target),
-            //             Instruction::POP(target) => cpu.pop(target),
-            //             Instruction::LDR8U8(target) => cpu.ld_r8_u8(target),
-            //             Instruction::LDR8R8(target, source) => cpu.ld_r8_r8(target, source),
-            //             Instruction::LDU16A => cpu.ld_u16_a(),
-            //             Instruction::RL(target) => cpu.rl(target),
-            //             Instruction::RLA => cpu.rla(),
-            //             Instruction::CPU8 => cpu.cp_u8(),
             //             Instruction::CPHL => cpu.cp_hl(),
             //             Instruction::CPL => cpu.cpl(),
             //             Instruction::ORR8(target) => cpu.or_r8(target),

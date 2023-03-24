@@ -6,6 +6,7 @@ pub mod execute;
 pub mod jump;
 pub mod load;
 pub mod logic;
+pub mod shift;
 
 pub const BYTE_PREFIX: u8 = 0xCB;
 pub const UNASSINGED_BYTES: [u8; 11] = [
@@ -163,7 +164,7 @@ pub enum Comparison {
     CARRY,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TargetPointer {
     BC,
     DE,
@@ -190,7 +191,7 @@ pub enum TargetRegister16 {
     SP,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum TargetPushPop {
     AF,
     BC,

@@ -1,22 +1,20 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
-use crate::{cpu::GameboyChip, utils::merge_bytes};
+use crate::cpu::GameboyChip;
 
-// RET - 0xC9
-// Length: 1 byte
+// LD (FF00+u8),A - 0xE0
+// Length: 2 bytes
 // FlagsZero	unmodified
 // Negative	unmodified
 // Half Carry	unmodified
 // Carry	unmodified
-// Group: control/br
-// Timingwith branch (16t)
+// Group: x8/lsm
+// Timingwithout branch (12t)
 // fetch
-// read	(SP++)->lower
-// read	(SP++)->upper
-// internal	set PC?
-pub struct Inst {
-    upper: u8,
-    lower: u8,
+// read	u8
+// write	A->(FF00+u8)
+struct Inst {
+    address: u16,
 }
 
 struct InstWrapper {
@@ -25,29 +23,25 @@ struct InstWrapper {
 }
 
 pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
-    let inst = Rc::new(RefCell::new(Inst { upper: 0, lower: 0 }));
+    let inst = Rc::new(RefCell::new(Inst { address: 0 }));
 
-    let mut executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>> = VecDeque::with_capacity(4);
-    executions.push_back(Box::new(move |_: &mut GameboyChip| {
+    let mut executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>> = VecDeque::with_capacity(3);
+
+    executions.push_back(Box::new(|_: &mut GameboyChip| {
         //fetch
     }));
 
     let inst_ref = inst.clone();
     executions.push_back(Box::new(move |chip: &mut GameboyChip| {
         let mut inst = inst_ref.borrow_mut();
-        inst.lower = chip.pop();
-    }));
-
-    let inst_ref = inst.clone();
-    executions.push_back(Box::new(move |chip: &mut GameboyChip| {
-        let mut inst = inst_ref.borrow_mut();
-        inst.upper = chip.pop();
+        inst.address = 0xFF00 + chip.read_byte_pc_lower() as u16;
     }));
 
     let inst_ref = inst.clone();
     executions.push_back(Box::new(move |chip: &mut GameboyChip| {
         let inst = inst_ref.borrow_mut();
-        chip.pc = merge_bytes(inst.upper, inst.lower);
+        chip.write_byte(inst.address, chip.registers.a);
+        chip.pc = chip.pc.wrapping_add(2);
     }));
 
     Box::new(InstWrapper { inst, executions })

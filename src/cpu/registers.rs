@@ -2,6 +2,8 @@
 
 use crate::utils::*;
 
+use super::instructions::TargetRegister8;
+
 //documented gameboy registers
 //f of the af register is represented
 //by the special FlagsRegister
@@ -29,6 +31,30 @@ impl Registers {
             l: 0,
             sp: 0,
             flags: FlagsRegister::from(0),
+        }
+    }
+
+    pub fn get_from_enum(&mut self, target: &TargetRegister8) -> u8 {
+        match target {
+            TargetRegister8::A => self.a,
+            TargetRegister8::B => self.b,
+            TargetRegister8::C => self.c,
+            TargetRegister8::D => self.d,
+            TargetRegister8::E => self.e,
+            TargetRegister8::H => self.h,
+            TargetRegister8::L => self.l,
+        }
+    }
+
+    pub fn set_from_enum(&mut self, target: &TargetRegister8, value: u8) {
+        match target {
+            TargetRegister8::A => self.a = value,
+            TargetRegister8::B => self.b = value,
+            TargetRegister8::C => self.c = value,
+            TargetRegister8::D => self.d = value,
+            TargetRegister8::E => self.e = value,
+            TargetRegister8::H => self.h = value,
+            TargetRegister8::L => self.l = value,
         }
     }
 
