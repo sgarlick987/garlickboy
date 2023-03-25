@@ -1,25 +1,29 @@
 use std::collections::VecDeque;
 
-use crate::chip::GameboyChip;
+use crate::chip::{instructions::TargetRegister8, GameboyChip};
 
-// XOR A,u8 - 0xEE
+// SRL B - 0x38
 // Length: 2 bytes
 // Flags
 // Zero	dependent
 // Negative	unset
 // Half Carry	unset
-// Carry	unset
-// Group: x8/alu
+// Carry	dependent
+// Group: x8/rsb
 // Timing
 // without branch (8t)
+// fetch	(0xCB)
 // fetch
-// read	u8
 struct Inst {
+    target: TargetRegister8,
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
 
-pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
+pub fn new(
+    target: &TargetRegister8,
+) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     let mut inst = Inst {
+        target: target.clone(),
         executions: VecDeque::with_capacity(2),
     };
 
@@ -28,11 +32,16 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            chip.registers.a ^= chip.read_byte_pc_lower();
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.negative = false;
+            let mut byte = chip.registers.get_from_enum(&inst.target);
+
+            chip.registers.flags.carry = byte & 1 == 1;
+            byte = byte >> 1;
+
+            chip.registers.set_from_enum(&inst.target, byte);
+            chip.registers.flags.zero = byte == 0;
             chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
+            chip.registers.flags.negative = false;
+
             chip.pc = chip.pc.wrapping_add(2);
         }));
 

@@ -2,18 +2,18 @@ use std::collections::VecDeque;
 
 use crate::chip::GameboyChip;
 
-// XOR A,u8 - 0xEE
-// Length: 2 bytes
+// ADC A,(HL) - 0x8E
+// Length: 1 byte
 // Flags
 // Zero	dependent
 // Negative	unset
-// Half Carry	unset
-// Carry	unset
+// Half Carry	dependent
+// Carry	dependent
 // Group: x8/alu
 // Timing
 // without branch (8t)
 // fetch
-// read	u8
+// read	(HL)
 struct Inst {
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
@@ -28,12 +28,11 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            chip.registers.a ^= chip.read_byte_pc_lower();
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.negative = false;
-            chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
-            chip.pc = chip.pc.wrapping_add(2);
+            let hl = chip.registers.get_hl();
+            let byte = chip.read_byte(hl);
+            chip.registers.a = add(chip, byte, chip.registers.flags.carry);
+
+            chip.pc = chip.pc.wrapping_add(1);
         }));
 
     Box::new(inst)
@@ -49,4 +48,14 @@ impl Iterator for Inst {
 
         self.executions.pop_front()
     }
+}
+
+pub fn add(chip: &mut GameboyChip, value: u8, carry: bool) -> u8 {
+    let (added, overflowed) = chip.registers.a.carrying_add(value, carry);
+    chip.registers.flags.zero = added == 0;
+    chip.registers.flags.negative = false;
+    chip.registers.flags.carry = overflowed;
+    chip.registers.flags.half_carry = (chip.registers.a & 0x0F) + (value & 0x0F) > 0x0F;
+
+    added
 }

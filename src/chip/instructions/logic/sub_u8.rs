@@ -2,13 +2,13 @@ use std::collections::VecDeque;
 
 use crate::chip::GameboyChip;
 
-// XOR A,u8 - 0xEE
+// SUB A,u8 - 0xD6
 // Length: 2 bytes
 // Flags
 // Zero	dependent
-// Negative	unset
-// Half Carry	unset
-// Carry	unset
+// Negative	set
+// Half Carry	dependent
+// Carry	dependent
 // Group: x8/alu
 // Timing
 // without branch (8t)
@@ -28,11 +28,8 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            chip.registers.a ^= chip.read_byte_pc_lower();
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.negative = false;
-            chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
+            let byte = chip.read_byte_pc_lower();
+            chip.registers.a = chip.sub(byte, false);
             chip.pc = chip.pc.wrapping_add(2);
         }));
 

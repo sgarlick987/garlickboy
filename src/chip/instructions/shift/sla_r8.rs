@@ -58,12 +58,3 @@ impl Iterator for Inst {
         self.executions.pop_front()
     }
 }
-
-//     pub fn sla(&mut self, target: &TargetRegister8) {
-//         //fetch
-
-//         //fetch
-
-//         self.pc = self.pc.wrapping_add(2);
-//     }
-// }

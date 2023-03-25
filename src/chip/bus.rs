@@ -57,7 +57,9 @@ impl Bus for AddressBus {
                     self.memory[address]
                 }
             }
-            0xFF00 => 0xFF,
+            0xFF00 => 0b00001111,
+            0xFFE4 => self.memory[address],
+            0xFFE1 => self.memory[address],
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             _ => self.memory[address],
         }
@@ -71,6 +73,8 @@ impl Bus for AddressBus {
         }
         match address {
             0xFF50 => self.bios.mapped = false,
+            0xFFE1 => self.memory[address] = byte,
+            0xFFE4 => self.memory[address] = byte,
             0x0000..=0x7FFF => (), // ignore writes to rom
             VRAM_BEGIN..=VRAM_END => {
                 self.gpu.write_vram(address - VRAM_BEGIN, byte);

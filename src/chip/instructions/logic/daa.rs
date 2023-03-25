@@ -1,39 +1,30 @@
+// DAA - 0x27
+// Length: 1 byte
+// Flags
+// Zero	dependent
+// Negative	unmodified
+// Half Carry	unset
+// Carry	dependent
+// Group: x8/alu
+// Timing
+// without branch (4t)
+// fetch
 use std::collections::VecDeque;
 
 use crate::chip::GameboyChip;
 
-// XOR A,u8 - 0xEE
-// Length: 2 bytes
-// Flags
-// Zero	dependent
-// Negative	unset
-// Half Carry	unset
-// Carry	unset
-// Group: x8/alu
-// Timing
-// without branch (8t)
-// fetch
-// read	u8
 struct Inst {
     executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>>,
 }
 
 pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     let mut inst = Inst {
-        executions: VecDeque::with_capacity(2),
+        executions: VecDeque::with_capacity(1),
     };
 
     inst.executions
-        .push_back(Box::new(move |_: &mut GameboyChip| {}));
-
-    inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            chip.registers.a ^= chip.read_byte_pc_lower();
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.negative = false;
-            chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
-            chip.pc = chip.pc.wrapping_add(2);
+            chip.pc = chip.pc.wrapping_add(1);
         }));
 
     Box::new(inst)

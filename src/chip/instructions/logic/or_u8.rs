@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::chip::GameboyChip;
 
-// XOR A,u8 - 0xEE
+// OR A,u8 - 0xF6
 // Length: 2 bytes
 // Flags
 // Zero	dependent
@@ -28,7 +28,7 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            chip.registers.a ^= chip.read_byte_pc_lower();
+            chip.registers.a |= chip.read_byte_pc_lower();
             chip.registers.flags.zero = chip.registers.a == 0;
             chip.registers.flags.negative = false;
             chip.registers.flags.half_carry = false;

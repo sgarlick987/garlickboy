@@ -53,6 +53,7 @@ impl Instruction {
             Instruction::PUSH(target) => push::new(target),
 
             //logic
+            Instruction::ADCHL => adc_hl::new(),
             Instruction::ADCR8(target) => adc_r8::new(target),
             Instruction::ADDHL => add_hl::new(),
             Instruction::ADDR8(target) => add_r8::new(target),
@@ -64,24 +65,26 @@ impl Instruction {
             Instruction::CPR8(target) => cp_r8::new(target),
             Instruction::CPU8 => cp_u8::new(),
             Instruction::CPL => cpl::new(),
+            Instruction::DAA => daa::new(),
             Instruction::DEC(target) => dec::new(target),
             Instruction::INC(target) => inc::new(target),
             Instruction::ORR8(target) => or_r8::new(target),
-            Instruction::XORR8(target) => xor_r8::new(target),
+            Instruction::ORU8 => or_u8::new(),
             Instruction::SUBR8(target) => sub_r8::new(target),
+            Instruction::SUBU8 => sub_u8::new(),
+            Instruction::XORR8(target) => xor_r8::new(target),
+            Instruction::XORU8 => xor_u8::new(),
 
             //shift
-            Instruction::RL(target) => rl::new(target),
+            Instruction::RL(target) => rl_r8::new(target),
             Instruction::RLA => rla::new(),
             Instruction::RLCA => rlca::new(),
-            Instruction::SLA(target) => sla::new(target),
-            Instruction::SWAP(target) => swap::new(target),
+            Instruction::SLA(target) => sla_r8::new(target),
+            Instruction::SRL(target) => srl_r8::new(target),
+            Instruction::SWAP(target) => swap_r8::new(target),
 
-            //             Instruction::LDFF00CA => cpu.ld_ff00c_a(),
             //             Instruction::LDDAHL => cpu.ldd_a_hl(),
-            //             Instruction::JPHL => cpu.jp_hl(),
             //             Instruction::SETHL(bit) => cpu.set_hl(bit),
-            //             Instruction::XORU8 => cpu.xor_u8(),
             _ => {
                 panic!("{:?} unimplemented Instruction", self);
             }
