@@ -2,14 +2,16 @@ use std::collections::VecDeque;
 
 use crate::chip::GameboyChip;
 
-// ADD A,(HL) - 0x86
+// SUB A,(HL) - 0x96
 // Length: 1 byte
-// FlagsZero	dependent
-// Negative	unset
+// Flags
+// Zero	dependent
+// Negative	set
 // Half Carry	dependent
 // Carry	dependent
 // Group: x8/alu
-// Timingwithout branch (8t)
+// Timing
+// without branch (8t)
 // fetch
 // read	(HL)
 struct Inst {
@@ -28,7 +30,7 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let hl = chip.registers.get_hl();
             let byte = chip.read_byte(hl);
-            chip.registers.a = chip.add(byte, false);
+            chip.registers.a = chip.sub(byte, false);
 
             chip.pc = chip.pc.wrapping_add(1);
         }));

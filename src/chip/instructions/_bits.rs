@@ -2,62 +2,6 @@ use super::TargetRegister8;
 use crate::cpu::GameboyChip;
 
 // impl GameboyChip {
-//     // SET 7,(HL) - 0xFE
-//     // Length: 2 bytes
-//     // Flags
-//     // Zero	unmodified
-//     // Negative	unmodified
-//     // Half Carry	unmodified
-//     // Carry	unmodified
-//     // Group: x8/rsb
-//     // Timing
-//     // without branch (16t)
-//     // fetch	(0xCB)
-//     // fetch
-//     // read	(HL)
-//     // write	(HL)
-//     pub fn set_hl(&mut self, bit: &u8) {
-//         let hl = self.registers.get_hl();
-//         //fetch
-
-//         //fetch
-
-//         let bit = 1 << bit;
-//         //read
-//         let mut value = self.read_byte(hl);
-//         value |= bit;
-
-//         //write
-//         self.write_byte(hl, value);
-
-//         self.pc = self.pc.wrapping_add(2);
-//     }
-
-//     // RLCA - 0x07
-//     // Length: 1 byte
-//     // Flags
-//     // Zero	unset
-//     // Negative	unset
-//     // Half Carry	unset
-//     // Carry	dependent
-//     // Group: x8/rsb
-//     // Timing
-//     // without branch (4t)
-//     // fetch
-//     pub fn rlca() -> Box<dyn FnMut(&mut GameboyChip)> {
-//         let inst = Box::new(|cpu: &mut GameboyChip| {
-//             let new_a = cpu.registers.a << 1;
-
-//             cpu.registers.flags.carry = cpu.registers.a >> 7 == 1;
-//             cpu.registers.flags.half_carry = false;
-//             cpu.registers.flags.negative = false;
-//             cpu.registers.flags.zero = false;
-//             cpu.registers.a = new_a;
-//         });
-
-//         inst
-//     }
-
 // #[cfg(test)]
 // mod tests {
 //     use crate::address::*;

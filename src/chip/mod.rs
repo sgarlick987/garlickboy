@@ -1,12 +1,13 @@
 #![allow(dead_code)]
-pub mod bus;
 pub mod bios;
+pub mod bus;
 pub mod gpu;
 pub mod instructions;
 pub mod interrupts;
+pub mod joypad;
 pub mod registers;
 
-use crate::display::Display;
+use crate::{controller::Controller, display::Display};
 
 use self::{
     bus::Bus,
@@ -35,6 +36,10 @@ impl GameboyChip {
 
     pub fn execute(&mut self, step: Box<dyn FnOnce(&mut GameboyChip)>) {
         step(self);
+    }
+
+    pub fn update_joypad(&mut self, controller: &Controller) {
+        self.bus.update_joypad(controller);
     }
 
     pub fn update_display(&mut self, display: &mut Display) {

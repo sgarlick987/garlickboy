@@ -1,7 +1,11 @@
 use std::process;
 
 use crate::{
-    chip::bus::AddressBus, chip::bios::*, chip::gpu::PPU, display::Display, joypad::Joypad,
+    chip::bios::*,
+    chip::gpu::PPU,
+    chip::{bus::AddressBus, joypad::Joypad},
+    controller::Controller,
+    display::Display,
     rom::*,
 };
 
@@ -21,7 +25,7 @@ pub struct Emu {
     chip: GameboyChip,
     fps_manager: FPSManager,
     display: Display,
-    joypad: Joypad,
+    controller: Controller,
     event_pump: EventPump,
     event_timers: EventTimers,
     rom: Rom,
@@ -39,9 +43,10 @@ impl Emu {
 
         let rom = load_rom(GB_ROM);
         let bios = load_bios("data/dmg_boot.bin");
+        let controller = Controller::new();
         let joypad = Joypad::new();
         let gpu = Box::new(PPU::new());
-        let bus = Box::new(AddressBus::new(gpu, bios));
+        let bus = Box::new(AddressBus::new(gpu, bios, joypad));
         let chip = GameboyChip::new(bus);
         let event_timers = EventTimers { ly: 0, vblank: 0 };
 
@@ -52,7 +57,7 @@ impl Emu {
             rom,
             event_pump,
             event_timers,
-            joypad,
+            controller,
         };
 
         emu.write_rom();
@@ -74,8 +79,8 @@ impl Emu {
     }
 
     fn input(&mut self) {
-        self.joypad = Joypad::from(self.event_pump.keyboard_state());
-        //self.cpu.update_joypad(self.joypad);
+        self.controller = Controller::from(self.event_pump.keyboard_state());
+        self.chip.update_joypad(&self.controller);
     }
 
     fn present(&mut self) {
@@ -128,6 +133,7 @@ impl Emu {
                     self.handle_events();
                     self.input()
                 }
+
 
                 self.chip.execute(step);
                 self.update_timers();

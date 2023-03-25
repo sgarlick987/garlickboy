@@ -1,35 +1,3 @@
-use super::*;
-use crate::cpu::{FlagsRegister, GameboyChip};
-use crate::utils::*;
-
-// impl GameboyChip {
-
-//     // LD A,(HL-) - 0x3A
-//     // Length: 1 byte
-//     // Flags
-//     // Zero	unmodified
-//     // Negative	unmodified
-//     // Half Carry	unmodified
-//     // Carry	unmodified
-//     // Group: x8/lsm
-//     // Timing
-//     // without branch (8t)
-//     // fetch
-//     // read	(HL--)->A
-//     pub fn ldd_a_hl(&mut self) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         //read
-//         let hl = self.registers.get_hl();
-//         self.registers.a = self.read_byte(hl);
-//         self.registers.set_hl(hl.wrapping_sub(1));
-
-//         self.pc = self.pc.wrapping_add(1);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
-
 // #[cfg(test)]
 // mod tests {
 

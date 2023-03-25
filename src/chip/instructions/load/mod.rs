@@ -9,6 +9,7 @@ pub mod ld_r8_u8;
 pub mod ld_u16;
 pub mod ld_u16_a;
 pub mod ld_u8;
+pub mod ldd_a_hl;
 pub mod ldd_hl_a;
 pub mod ldh_a_u8;
 pub mod ldh_c_a;

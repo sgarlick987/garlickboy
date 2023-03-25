@@ -12,7 +12,9 @@ impl Instruction {
             //bits
             Instruction::BITHL(bit) => bit_hl::new(bit),
             Instruction::BIT(bit, target) => bit::new(bit, target),
+            Instruction::RESHL(bit) => res_hl::new(bit),
             Instruction::RES(bit, target) => res::new(bit, target),
+            Instruction::SETHL(bit) => set_hl::new(bit),
 
             //control
             Instruction::DI => di::new(),
@@ -43,6 +45,7 @@ impl Instruction {
             Instruction::LDU8(target) => ld_u8::new(target),
             Instruction::LDU16A => ld_u16_a::new(),
             Instruction::LDU16(target) => ld_u16::new(target),
+            Instruction::LDDAHL => ldd_a_hl::new(),
             Instruction::LDDHLA => ldd_hl_a::new(),
             Instruction::LDHAU8 => ldh_a_u8::new(),
             Instruction::LDHCA => ldh_c_a::new(),
@@ -70,6 +73,7 @@ impl Instruction {
             Instruction::INC(target) => inc::new(target),
             Instruction::ORR8(target) => or_r8::new(target),
             Instruction::ORU8 => or_u8::new(),
+            Instruction::SUBHL => sub_hl::new(),
             Instruction::SUBR8(target) => sub_r8::new(target),
             Instruction::SUBU8 => sub_u8::new(),
             Instruction::XORR8(target) => xor_r8::new(target),
@@ -83,8 +87,6 @@ impl Instruction {
             Instruction::SRL(target) => srl_r8::new(target),
             Instruction::SWAP(target) => swap_r8::new(target),
 
-            //             Instruction::LDDAHL => cpu.ldd_a_hl(),
-            //             Instruction::SETHL(bit) => cpu.set_hl(bit),
             _ => {
                 panic!("{:?} unimplemented Instruction", self);
             }

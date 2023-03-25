@@ -1,8 +1,9 @@
-use crate::display::Display;
+use crate::{controller::Controller, display::Display};
 
 use super::{
-    bios::Bios,
+    bios::{Bios, BIOS_MAPPED_ADDRESS},
     gpu::{GPU, PPU_REGISTERS, VRAM_BEGIN, VRAM_END},
+    joypad::{Joypad, JOYPAD_ADDRESS},
 };
 
 #[cfg_attr(test, mockall::automock)]
@@ -11,6 +12,7 @@ pub trait Bus {
     fn write_byte(&mut self, address: u16, byte: u8);
     fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
     fn update_display(&mut self, display: &mut Display);
+    fn update_joypad(&mut self, controller: &Controller);
     fn inc_ly(&mut self);
     fn lcd_is_enabled(&mut self) -> bool;
 }
@@ -19,19 +21,25 @@ pub struct AddressBus {
     bios: Bios,
     memory: [u8; 0x10000],
     pub gpu: Box<dyn GPU>,
+    pub joypad: Joypad,
 }
 
 impl AddressBus {
-    pub fn new(gpu: Box<dyn GPU>, bios: Bios) -> AddressBus {
+    pub fn new(gpu: Box<dyn GPU>, bios: Bios, joypad: Joypad) -> AddressBus {
         AddressBus {
             bios,
             memory: [0; 0x10000],
             gpu,
+            joypad,
         }
     }
 }
 
 impl Bus for AddressBus {
+    fn update_joypad(&mut self, controller: &Controller) {
+        self.joypad.update(controller);
+    }
+
     fn update_display(&mut self, display: &mut Display) {
         self.gpu.update_display(display);
     }
@@ -57,9 +65,8 @@ impl Bus for AddressBus {
                     self.memory[address]
                 }
             }
-            0xFF00 => 0b00001111,
-            0xFFE4 => self.memory[address],
-            0xFFE1 => self.memory[address],
+            BIOS_MAPPED_ADDRESS => panic!("read from bios mapped address"),
+            JOYPAD_ADDRESS => self.joypad.read(),
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             _ => self.memory[address],
         }
@@ -72,9 +79,9 @@ impl Bus for AddressBus {
             return;
         }
         match address {
-            0xFF50 => self.bios.mapped = false,
             0xFFE1 => self.memory[address] = byte,
-            0xFFE4 => self.memory[address] = byte,
+            BIOS_MAPPED_ADDRESS => self.bios.mapped = false,
+            JOYPAD_ADDRESS => self.joypad.select(byte),
             0x0000..=0x7FFF => (), // ignore writes to rom
             VRAM_BEGIN..=VRAM_END => {
                 self.gpu.write_vram(address - VRAM_BEGIN, byte);

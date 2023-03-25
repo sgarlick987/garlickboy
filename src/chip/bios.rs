@@ -1,7 +1,7 @@
 use std::{fs::File, io::Read, str};
 
 // const BIOS_DMG0_MD5: &str = "32fbbd84168d3482956eb3c5051637f5";
-
+pub const BIOS_MAPPED_ADDRESS: usize = 0xFF50;
 pub struct Bios {
     pub data: [u8; 0x100],
     pub mapped: bool,

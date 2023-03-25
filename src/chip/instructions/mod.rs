@@ -578,7 +578,7 @@ impl Instruction {
             0x37 => Instruction::SCF,
             0x38 => Instruction::JRF(Comparison::CARRY), // JR C, i8
             0x39 => Instruction::UNIMPLEMENTED,
-            0x3A => Instruction::UNIMPLEMENTED,
+            0x3A => Instruction::LDDAHL,
             0x3B => Instruction::DEC(TargetIncDec::SP), // DEC SP
             0x3C => Instruction::INC(TargetIncDec::A),  // INC A
             0x3D => Instruction::DEC(TargetIncDec::A),  // DEC A

@@ -123,22 +123,6 @@ impl GPU for PPU {
             self.ly = 0;
         }
     }
-
-    // fn sync(&mut self) -> u8 {
-    //     if !self.lcd_on {
-    //         return 0;
-    //     }
-
-    //     self.cycle += 4;
-    //     if self.cycle == 456 {
-    //         self.cycle = 0;
-    //         self.ly += 1;
-    //     }
-    //     if self.ly == 154 {
-    //         self.ly = 0;
-    //     }
-    //     return self.ly;
-    // }
 }
 
 impl PPU {

@@ -5,6 +5,6 @@
 pub mod chip;
 pub mod display;
 pub mod emu;
-pub mod joypad;
+pub mod controller;
 pub mod rom;
 pub mod utils;
