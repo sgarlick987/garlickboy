@@ -1,6 +1,9 @@
-use crate::{bios::Bios, display::Display};
+use crate::display::Display;
 
-use super::gpu::{GPU, PPU_REGISTERS, VRAM_BEGIN, VRAM_END};
+use super::{
+    bios::Bios,
+    gpu::{GPU, PPU_REGISTERS, VRAM_BEGIN, VRAM_END},
+};
 
 #[cfg_attr(test, mockall::automock)]
 pub trait Bus {
@@ -55,8 +58,6 @@ impl Bus for AddressBus {
                 }
             }
             0xFF00 => 0xFF,
-            0xFF80 => 0,
-            0xFF81 => 0,
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             _ => self.memory[address],
         }

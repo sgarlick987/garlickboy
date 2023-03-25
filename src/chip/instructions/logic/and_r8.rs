@@ -51,12 +51,3 @@ impl Iterator for Inst {
         self.executions.pop_front()
     }
 }
-
-//     pub fn and_r8(&mut self, target: &TargetRegister8) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         self.pc = self.pc.wrapping_add(1);
-//         cycles_used += self.sync();
-//         cycles_used
-//     }

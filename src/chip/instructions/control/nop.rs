@@ -41,7 +41,7 @@ impl Iterator for Inst {
 
 #[cfg(test)]
 mod tests {
-    use crate::chip::address::*;
+    use crate::chip::bus::*;
     use coverage_helper::test;
 
     use super::*;

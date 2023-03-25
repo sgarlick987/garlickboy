@@ -1,7 +1,8 @@
 use std::process;
 
 use crate::{
-    bios::*, chip::address::AddressBus, chip::gpu::PPU, display::Display, joypad::Joypad, rom::*,
+    chip::bus::AddressBus, chip::bios::*, chip::gpu::PPU, display::Display, joypad::Joypad,
+    rom::*,
 };
 
 use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPump};
@@ -95,6 +96,13 @@ impl Emu {
             if self.event_timers.ly == 114 {
                 self.event_timers.ly = 0;
                 self.chip.inc_ly();
+                self.event_timers.vblank += 1;
+            }
+            if self.event_timers.vblank == 145 {
+                self.chip.flag_vblank();
+            }
+            if self.event_timers.vblank == 155 {
+                self.event_timers.vblank = 0;
             }
         } else {
             self.event_timers.ly = 0;
@@ -107,22 +115,28 @@ impl Emu {
 
         let mut cycles_used = 0;
         loop {
-            for step in self.chip.fetch() {
-                match cycles_used {
-                    0 => {
-                        self.handle_events();
-                        self.input()
-                    }
-                    MAX_MCYCLES_PER_FRAME => {
-                        self.present();
-                        cycles_used = 0;
-                    }
-                    _ => (),
+            let interrupts = self.chip.interrupts();
+            let has_interrupts = interrupts.len() != 0;
+            let steps: Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> =
+                if has_interrupts {
+                    interrupts
+                } else {
+                    self.chip.fetch()
+                };
+            for step in steps {
+                if cycles_used == 0 {
+                    self.handle_events();
+                    self.input()
                 }
 
                 self.chip.execute(step);
                 self.update_timers();
                 cycles_used += 1;
+
+                if cycles_used == MAX_MCYCLES_PER_FRAME {
+                    self.present();
+                    cycles_used = 0;
+                }
             }
         }
     }

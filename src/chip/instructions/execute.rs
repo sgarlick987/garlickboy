@@ -28,6 +28,7 @@ impl Instruction {
             Instruction::JR => jr::new(),
             Instruction::JRF(comparison) => jrf::new(comparison),
             Instruction::RETF(comparison) => retf::new(comparison),
+            Instruction::RETI => reti::new(),
             Instruction::RST(target) => rst::new(target),
 
             //load
@@ -80,7 +81,6 @@ impl Instruction {
             //             Instruction::LDDAHL => cpu.ldd_a_hl(),
             //             Instruction::JPHL => cpu.jp_hl(),
             //             Instruction::SETHL(bit) => cpu.set_hl(bit),
-            //             Instruction::RETI => cpu.reti(),
             //             Instruction::XORU8 => cpu.xor_u8(),
             _ => {
                 panic!("{:?} unimplemented Instruction", self);

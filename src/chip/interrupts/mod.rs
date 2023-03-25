@@ -1,3 +1,8 @@
+use super::GameboyChip;
+
+pub mod none;
+pub mod vblank;
+
 pub const IF_ADDRESS: u16 = 0xFF0F;
 pub const IE_ADDRESS: u16 = 0xFFFF;
 
@@ -13,7 +18,7 @@ impl MasterEnable {
         matches!(self, MasterEnable::Enabled)
     }
 
-    fn next(&self) -> MasterEnable {
+    fn next(&self) -> Self {
         match self {
             MasterEnable::Disabled => MasterEnable::Disabled,
             MasterEnable::ScheduledInitial => MasterEnable::ScheduledNext,
@@ -30,7 +35,7 @@ pub struct InterruptHandler {
 }
 
 impl InterruptHandler {
-    pub fn new() -> InterruptHandler {
+    pub fn new() -> Self {
         let ime = MasterEnable::Disabled;
         let flags = Interrupts::new();
         let enable = Interrupts::new();
@@ -70,16 +75,17 @@ impl InterruptHandler {
         self.ime = self.ime.next();
     }
 
-    pub fn handle(&mut self) -> u16 {
+    pub fn step(&mut self) -> Box<dyn ExactSizeIterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         self.update_ime();
         if self.ime.is_enabled() {
             if self.flags.vblank {
                 self.flags.vblank = false;
                 self.disable_ime();
-                return 0x0040;
+                return vblank::new();
             }
         }
-        0x0000
+
+        none::new()
     }
 }
 

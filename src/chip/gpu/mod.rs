@@ -118,10 +118,9 @@ impl GPU for PPU {
             panic!("gpu inc_ly should not be called while lcd is not enable");
         }
 
-        if self.ly == 153 {
+        self.ly += 1;
+        if self.ly == 154 {
             self.ly = 0;
-        } else {
-            self.ly += 1;
         }
     }
 
@@ -153,26 +152,6 @@ impl PPU {
             lcd_enabled: false,
         }
     }
-
-    // fn draw_tile_old(&mut self, x: u32, y: u32, tile_index: u16) {
-    //     let mut row = 0;
-    //     let tile = self.vram[(tile_index + 0x1800) as usize];
-    //     let start = (tile as usize) * 16;
-    //     let end = start + 16;
-
-    //     if tile != 0 {
-    //         row = row;
-    //     }
-    //     for line in self.vram[start..end].chunks(2) {
-    //         let lower = line[0];
-    //         let upper = line[1];
-    //         let line_pixels = self.palette.bytes_to_color(upper, lower);
-    //         for (i, pixel) in line_pixels.iter().enumerate() {
-    //             self.display.draw_pixel(x + (i as u32), y + row, *pixel);
-    //         }
-    //         row += 1;
-    //     }
-    // }
 
     fn set_palette(&mut self, palette: u8) {
         self.palette = Palette::from(palette);

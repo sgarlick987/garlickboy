@@ -1,5 +1,6 @@
 #![allow(dead_code)]
-pub mod address;
+pub mod bus;
+pub mod bios;
 pub mod gpu;
 pub mod instructions;
 pub mod interrupts;
@@ -8,7 +9,7 @@ pub mod registers;
 use crate::display::Display;
 
 use self::{
-    address::Bus,
+    bus::Bus,
     instructions::*,
     interrupts::{InterruptHandler, IE_ADDRESS, IF_ADDRESS},
     registers::*,
@@ -70,6 +71,16 @@ impl GameboyChip {
         }
     }
 
+    pub fn interrupts(
+        &mut self,
+    ) -> Box<dyn ExactSizeIterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
+        self.interrupt_handler.step()
+    }
+
+    pub fn flag_vblank(&mut self) {
+        self.interrupt_handler.flag_vblank();
+    }
+
     pub fn write_byte(&mut self, address: u16, byte: u8) {
         match address {
             IF_ADDRESS => self.interrupt_handler.set_flags(byte),
@@ -129,12 +140,4 @@ impl GameboyChip {
 
         subbed
     }
-
-    // fn sync(&mut self) -> u8 {
-    //     let ly = self.bus.sync();
-    //     if ly == 145 {
-    //         self.interrupt_handler.flag_vblank();
-    //     }
-    //     4
-    // }
 }

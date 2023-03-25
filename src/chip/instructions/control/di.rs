@@ -22,10 +22,11 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         executions: VecDeque::with_capacity(1),
     };
 
-    inst.executions.push_back(Box::new(|cpu: &mut GameboyChip| {
-        cpu.interrupt_handler.disable_ime();
-        cpu.pc = cpu.pc.wrapping_add(1);
-    }));
+    inst.executions
+        .push_back(Box::new(|chip: &mut GameboyChip| {
+            chip.interrupt_handler.disable_ime();
+            chip.pc = chip.pc.wrapping_add(1);
+        }));
 
     Box::new(inst)
 }
@@ -44,7 +45,7 @@ impl Iterator for Inst {
 
 #[cfg(test)]
 mod tests {
-    use crate::chip::address::*;
+    use crate::chip::bus::*;
     use coverage_helper::test;
 
     use super::*;
