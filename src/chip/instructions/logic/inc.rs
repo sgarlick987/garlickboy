@@ -1,8 +1,11 @@
 use std::collections::VecDeque;
 
-use crate::chip::{
-    instructions::{TargetIncDec, TargetRegister8},
-    GameboyChip,
+use crate::{
+    chip::{
+        instructions::{TargetIncDec, TargetRegister8},
+        GameboyChip,
+    },
+    utils::add_bytes_half_carry,
 };
 
 struct Inst {
@@ -27,7 +30,7 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut 
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            let value = match inst.target {
+            let register = match inst.target {
                 TargetIncDec::A => chip.registers.get_from_enum(&TargetRegister8::A),
                 TargetIncDec::B => chip.registers.get_from_enum(&TargetRegister8::B),
                 TargetIncDec::C => chip.registers.get_from_enum(&TargetRegister8::C),
@@ -36,8 +39,8 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut 
                 TargetIncDec::H => chip.registers.get_from_enum(&TargetRegister8::H),
                 TargetIncDec::L => chip.registers.get_from_enum(&TargetRegister8::L),
                 _ => panic!("invalid register for inc new_r8"),
-            }
-            .wrapping_add(1);
+            };
+            let value = register.wrapping_add(1);
 
             match inst.target {
                 TargetIncDec::A => chip.registers.set_from_enum(&TargetRegister8::A, value),
@@ -50,9 +53,9 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut 
                 _ => panic!("invalid register for inc new_r8"),
             }
 
-            chip.registers.flags.zero = value == 0;
-            chip.registers.flags.negative = false;
-            //TODO: half carry
+            chip.update_zero_flag(value == 0);
+            chip.reset_negative_flag();
+            chip.update_half_carry_flag(add_bytes_half_carry(register, 1));
             chip.pc = chip.pc.wrapping_add(1);
         }));
 

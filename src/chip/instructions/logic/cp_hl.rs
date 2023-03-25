@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{chip::GameboyChip, utils::bytes_half_carry};
+use crate::{chip::GameboyChip, utils::sub_bytes_half_carry};
 
 // CP A,(HL) - 0xBE
 // Length: 1 byte
@@ -29,10 +29,10 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
             let hl = chip.registers.get_hl();
             let byte = chip.read_byte(hl);
             let a = chip.registers.a;
-            chip.registers.flags.negative = true;
-            chip.registers.flags.zero = a == byte;
-            chip.registers.flags.carry = a < byte;
-            chip.registers.flags.half_carry = bytes_half_carry(a, byte);
+            chip.set_negative_flag();
+            chip.update_zero_flag(a == byte);
+            chip.update_carry_flag(a < byte);
+            chip.update_half_carry_flag(sub_bytes_half_carry(a, byte));
 
             chip.pc = chip.pc.wrapping_add(1);
         }));

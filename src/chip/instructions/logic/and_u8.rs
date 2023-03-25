@@ -31,10 +31,10 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
             let byte = chip.read_byte_pc_lower();
             chip.registers.a &= byte;
 
-            chip.registers.flags.negative = false;
-            chip.registers.flags.carry = false;
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.half_carry = true;
+            chip.reset_negative_flag();
+            chip.reset_carry_flag();
+            chip.update_zero_flag(chip.registers.a == 0);
+            chip.set_half_carry_flag();
             chip.pc = chip.pc.wrapping_add(2);
         }));
 

@@ -6,8 +6,11 @@ pub fn split_bytes(bytes: u16) -> (u8, u8) {
     (((bytes & 0xFF00) >> 8) as u8, (bytes & 0x00FF) as u8)
 }
 
-pub fn bytes_half_carry(a: u8, b: u8) -> bool {
+pub fn add_bytes_half_carry(a: u8, b: u8) -> bool {
     (a & 0x0F) + (b & 0x0F) > 0x0F
+}
+pub fn sub_bytes_half_carry(a: u8, b: u8) -> bool {
+    (a & 0x0F) < (b & 0x0F)
 }
 
 #[cfg(test)]
@@ -34,13 +37,42 @@ mod tests {
         assert_eq!(bytes, 0x0809);
     }
 
-    // #[test]
-    // fn test_bytes_half_carry() {
-    //     let upper = 0x08;
-    //     let lower = 0x09;
+    #[test]
+    fn test_add_bytes_half_carry_carried() {
+        let upper = 0x0F;
+        let lower = 0x0F;
 
-    //     let half_carry = bytes_half_carry(upper, lower);
+        let half_carry = add_bytes_half_carry(upper, lower);
 
-    //     assert_eq!(bytes, 0x0809);
-    // }
+        assert!(half_carry);
+    }
+
+    #[test]
+    fn test_add_bytes_half_carry_not_carried() {
+        let a = 0x07;
+        let b = 0x07;
+
+        let half_carry = add_bytes_half_carry(a, b);
+
+        assert!(!half_carry);
+    }
+
+    #[test]
+    fn test_sub_bytes_half_carry_carried() {
+        let a = 0x0E;
+        let b = 0x0F;
+
+        let half_carry = sub_bytes_half_carry(a, b);
+
+        assert!(half_carry);
+    }
+    #[test]
+    fn test_sub_bytes_half_carry_not_carried() {
+        let a = 0x0F;
+        let b = 0x0E;
+
+        let half_carry = sub_bytes_half_carry(a, b);
+
+        assert!(!half_carry);
+    }
 }

@@ -1,39 +1,12 @@
-//     pub fn retf(&mut self, comparison: &Comparison) -> u8 {
-//         //fetch
-//         let mut cycles_used = self.sync();
-
-//         if match comparison {
-//             Comparison::NONZERO => !self.zero,
-//             Comparison::ZERO => self.zero,
-//             Comparison::CARRY => self.carry_flag(),
-//             Comparison::NOCARRY => !self.carry_flag(),
-//         } {
-//             //read lower
-//             let lower = self._pop();
-//             cycles_used += self.sync();
-
-//             //read upper
-//             let upper = self._pop();
-//             cycles_used += self.sync();
-
-//             //set pc
-//             self.pc = merge_bytes(upper, lower);
-//         } else {
-//             self.pc = self.pc.wrapping_add(1);
-//         }
-
-//         cycles_used += self.sync();
-//         cycles_used
-//     }
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use crate::{
     chip::{instructions::Comparison, GameboyChip},
-    utils::merge_bytes,
+    utils::{merge_bytes, split_bytes},
 };
 
-// RET Z - 0xC8
-// Length: 1 byte
+// CALL NZ,u16 - 0xC4
+// Length: 3 bytes
 // Flags
 // Zero	unmodified
 // Negative	unmodified
@@ -41,21 +14,25 @@ use crate::{
 // Carry	unmodified
 // Group: control/br
 // Timing
-// without branch (8t)	with branch (20t)
+// without branch (12t)	with branch (24t)
 // fetch	fetch
-// internal	internal
-// branch decision?	branch decision?
-// read
-// (SP++)->lower
-// read
-// (SP++)->upper
+// read	read
+// u16:lower	u16:lower
+// read	read
+// u16:upper	u16:upper
 // internal
-// set PC?
+// branch decision?
+// write
+// PC:upper->(--SP)
+// write
+// PC:lower->(--SP)
 pub struct Inst {
-    branch: bool,
-    comparison: Comparison,
     upper: u8,
     lower: u8,
+    return_upper: u8,
+    return_lower: u8,
+    branch: bool,
+    comparison: Comparison,
 }
 
 struct InstWrapper {
@@ -65,19 +42,31 @@ struct InstWrapper {
 
 pub fn new(comparison: &Comparison) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     let inst = Rc::new(RefCell::new(Inst {
-        branch: false,
-        comparison: comparison.clone(),
         upper: 0,
         lower: 0,
+        return_upper: 0,
+        return_lower: 0,
+        branch: false,
+        comparison: comparison.clone(),
     }));
 
-    let mut executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>> = VecDeque::with_capacity(2);
+    let mut executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>> = VecDeque::with_capacity(3);
 
-    executions.push_back(Box::new(move |_: &mut GameboyChip| {}));
+    executions.push_back(Box::new(move |_: &mut GameboyChip| {
+        //fetch
+    }));
 
     let inst_ref = inst.clone();
     executions.push_back(Box::new(move |chip: &mut GameboyChip| {
         let mut inst = inst_ref.borrow_mut();
+        inst.lower = chip.read_byte_pc_lower();
+    }));
+
+    let inst_ref = inst.clone();
+    executions.push_back(Box::new(move |chip: &mut GameboyChip| {
+        let mut inst = inst_ref.borrow_mut();
+        inst.upper = chip.read_byte_pc_upper();
+
         inst.branch = match inst.comparison {
             Comparison::NONZERO => !chip.zero_flag(),
             Comparison::ZERO => chip.zero_flag(),
@@ -86,8 +75,28 @@ pub fn new(comparison: &Comparison) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&m
         };
 
         if !inst.branch {
-            chip.pc = chip.pc.wrapping_add(1);
+            chip.pc = chip.pc.wrapping_add(3);
         }
+    }));
+
+    let inst_ref = inst.clone();
+    executions.push_back(Box::new(move |chip: &mut GameboyChip| {
+        let mut inst = inst_ref.borrow_mut();
+        (inst.return_upper, inst.return_lower) = split_bytes(chip.pc.wrapping_add(3));
+        let address = merge_bytes(inst.upper, inst.lower);
+        chip.pc = address;
+    }));
+
+    let inst_ref = inst.clone();
+    executions.push_back(Box::new(move |chip: &mut GameboyChip| {
+        let inst = inst_ref.borrow_mut();
+        chip.push(inst.return_upper);
+    }));
+
+    let inst_ref = inst.clone();
+    executions.push_back(Box::new(move |chip: &mut GameboyChip| {
+        let inst = inst_ref.borrow_mut();
+        chip.push(inst.return_lower);
     }));
 
     Box::new(InstWrapper { inst, executions })
@@ -98,36 +107,39 @@ impl Iterator for InstWrapper {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.executions.is_empty() {
-            let inst = self.inst.clone();
-            let mut inst = inst.borrow_mut();
+            let mut inst = self.inst.borrow_mut();
             if inst.branch {
+                inst.branch = false;
                 let mut executions: VecDeque<Box<dyn FnOnce(&mut GameboyChip)>> =
                     VecDeque::with_capacity(3);
-                inst.branch = false;
 
                 let inst_ref = self.inst.clone();
                 executions.push_back(Box::new(move |chip: &mut GameboyChip| {
                     let mut inst = inst_ref.borrow_mut();
-                    inst.lower = chip.pop();
-                }));
-
-                let inst_ref = self.inst.clone();
-                executions.push_back(Box::new(move |chip: &mut GameboyChip| {
-                    let mut inst = inst_ref.borrow_mut();
-                    inst.upper = chip.pop();
+                    let (upper, lower) = split_bytes(chip.pc);
+                    inst.return_upper = upper;
+                    inst.return_lower = lower;
                 }));
 
                 let inst_ref = self.inst.clone();
                 executions.push_back(Box::new(move |chip: &mut GameboyChip| {
                     let inst = inst_ref.borrow();
+                    chip.push(inst.return_upper);
+                }));
+
+                let inst_ref = self.inst.clone();
+                executions.push_back(Box::new(move |chip: &mut GameboyChip| {
+                    let inst = inst_ref.borrow();
+                    chip.push(inst.return_upper);
                     chip.pc = merge_bytes(inst.upper, inst.lower);
                 }));
+
                 self.executions = executions;
+
                 return self.executions.pop_front();
             }
             return None;
         }
-
         self.executions.pop_front()
     }
 }

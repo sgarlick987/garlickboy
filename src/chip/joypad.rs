@@ -21,8 +21,8 @@ const DIRECTIONS_BIT: u8 = 1 << 5;
 impl Joypad {
     pub fn new() -> Self {
         Self {
-            directions: 1,
-            actions: 1,
+            directions: 0xFF,
+            actions: 0xFF,
             selected: Selected::None,
         }
     }
@@ -31,7 +31,7 @@ impl Joypad {
         match self.selected {
             Selected::Actions => self.actions,
             Selected::Directions => self.directions,
-            Selected::None => 1,
+            Selected::None => 0xFF,
         }
     }
 

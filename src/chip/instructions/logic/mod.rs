@@ -18,5 +18,6 @@ pub mod or_u8;
 pub mod sub_hl;
 pub mod sub_r8;
 pub mod sub_u8;
+pub mod xor_hl;
 pub mod xor_r8;
 pub mod xor_u8;

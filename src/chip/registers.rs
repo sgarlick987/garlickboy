@@ -7,6 +7,7 @@ use super::instructions::TargetRegister8;
 //documented gameboy registers
 //f of the af register is represented
 //by the special FlagsRegister
+#[derive(Debug)]
 pub struct Registers {
     pub a: u8,
     pub b: u8,
@@ -110,7 +111,7 @@ impl Registers {
 //this represents the lower 8 bits of our AF register
 //since it serves a special case of the 4 upper bits being special flags
 //the lower 4 bits are always set to 0 so they aren't represented here.
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct FlagsRegister {
     pub zero: bool,
     pub negative: bool,

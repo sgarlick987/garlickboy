@@ -66,7 +66,10 @@ impl Bus for AddressBus {
                 }
             }
             BIOS_MAPPED_ADDRESS => panic!("read from bios mapped address"),
-            JOYPAD_ADDRESS => self.joypad.read(),
+            JOYPAD_ADDRESS => {
+                let byte = self.joypad.read();
+                return byte;
+            }
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             _ => self.memory[address],
         }
@@ -79,9 +82,11 @@ impl Bus for AddressBus {
             return;
         }
         match address {
-            0xFFE1 => self.memory[address] = byte,
             BIOS_MAPPED_ADDRESS => self.bios.mapped = false,
             JOYPAD_ADDRESS => self.joypad.select(byte),
+            0xFF80 => {
+                self.memory[address] = byte;
+            }
             0x0000..=0x7FFF => (), // ignore writes to rom
             VRAM_BEGIN..=VRAM_END => {
                 self.gpu.write_vram(address - VRAM_BEGIN, byte);

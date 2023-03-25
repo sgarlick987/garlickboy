@@ -27,10 +27,10 @@ pub fn new(
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             chip.registers.a ^= chip.registers.get_from_enum(&inst.target);
-            chip.registers.flags.zero = chip.registers.a == 0;
-            chip.registers.flags.negative = false;
-            chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
+            chip.update_zero_flag(chip.registers.a == 0);
+            chip.reset_negative_flag();
+            chip.reset_half_carry_flag();
+            chip.reset_carry_flag();
             chip.pc = chip.pc.wrapping_add(1);
         }));
 

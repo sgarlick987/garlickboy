@@ -93,10 +93,10 @@
 //             let mut cpu = GameboyChip::new(bus);
 
 //             match comparison {
-//                 Comparison::ZERO => cpu.registers.flags.zero = false,
-//                 Comparison::NONZERO => cpu.registers.flags.zero = true,
-//                 Comparison::CARRY => cpu.registers.flags.carry = false,
-//                 Comparison::NOCARRY => cpu.registers.flags.carry = true,
+//                 Comparison::ZERO => cpu.reset_zero(),
+//                 Comparison::NONZERO => cpu.set_zero(),
+//                 Comparison::CARRY => cpu.reset_carry(),
+//                 Comparison::NOCARRY => cpu.set_carry(),
 //             }
 //             cpu.jrf(&comparison);
 //             assert_eq!(cpu.pc, LENGTH);
@@ -126,10 +126,10 @@
 //                 cpu.pc = PC;
 
 //                 match comparison {
-//                     Comparison::ZERO => cpu.registers.flags.zero = true,
-//                     Comparison::NONZERO => cpu.registers.flags.zero = false,
-//                     Comparison::CARRY => cpu.registers.flags.carry = true,
-//                     Comparison::NOCARRY => cpu.registers.flags.carry = false,
+//                     Comparison::ZERO => cpu.set_zero(),
+//                     Comparison::NONZERO => cpu.reset_zero(),
+//                     Comparison::CARRY => cpu.set_carry(),
+//                     Comparison::NOCARRY => cpu.reset_carry(),
 //                 }
 //                 cpu.jrf(&comparison);
 

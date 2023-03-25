@@ -23,6 +23,7 @@ impl Instruction {
 
             //jump
             Instruction::CALL => call::new(),
+            Instruction::CALLF(comparison) => callf::new(comparison),
             Instruction::RET => ret::new(),
             Instruction::JP => jp::new(),
             Instruction::JPF(comparison) => jpf::new(comparison),
@@ -76,6 +77,7 @@ impl Instruction {
             Instruction::SUBHL => sub_hl::new(),
             Instruction::SUBR8(target) => sub_r8::new(target),
             Instruction::SUBU8 => sub_u8::new(),
+            Instruction::XORHL => xor_hl::new(),
             Instruction::XORR8(target) => xor_r8::new(target),
             Instruction::XORU8 => xor_u8::new(),
 
@@ -83,6 +85,8 @@ impl Instruction {
             Instruction::RL(target) => rl_r8::new(target),
             Instruction::RLA => rla::new(),
             Instruction::RLCA => rlca::new(),
+            Instruction::RR(target) => rr_r8::new(target),
+            Instruction::RRA => rra::new(),
             Instruction::SLA(target) => sla_r8::new(target),
             Instruction::SRL(target) => srl_r8::new(target),
             Instruction::SWAP(target) => swap_r8::new(target),

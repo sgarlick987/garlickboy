@@ -27,7 +27,8 @@ pub fn new(
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let register = chip.registers.get_from_enum(&inst.target);
-            chip.registers.a = chip.add(register, chip.registers.flags.carry);
+            let carry = chip.carry_flag();
+            chip.registers.a = chip.add(register, carry);
 
             chip.pc = chip.pc.wrapping_add(1);
         }));

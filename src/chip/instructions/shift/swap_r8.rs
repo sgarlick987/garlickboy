@@ -33,12 +33,13 @@ pub fn new(
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            let swapped = chip.registers.get_from_enum(&inst.target).swap_bytes();
+            let swapped = chip.registers.get_from_enum(&inst.target);
+            let swapped = (swapped & 0x0F) << 4 | (swapped & 0xF0) >> 4;
             chip.registers.set_from_enum(&inst.target, swapped);
-            chip.registers.flags.zero = swapped == 0;
-            chip.registers.flags.negative = false;
-            chip.registers.flags.half_carry = false;
-            chip.registers.flags.carry = false;
+            chip.update_zero_flag(swapped == 0);
+            chip.reset_negative_flag();
+            chip.reset_half_carry_flag();
+            chip.reset_carry_flag();
 
             chip.pc = chip.pc.wrapping_add(2);
         }));

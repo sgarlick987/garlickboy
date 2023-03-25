@@ -49,10 +49,10 @@ pub fn new(comparison: &Comparison) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&m
         //need to determine this upfront since we have
         //variable cycles based on if we branch or not
         inst.branch = match inst.comparison {
-            Comparison::NONZERO => !chip.registers.flags.zero,
-            Comparison::ZERO => chip.registers.flags.zero,
-            Comparison::CARRY => chip.registers.flags.carry,
-            Comparison::NOCARRY => !chip.registers.flags.carry,
+            Comparison::NONZERO => !chip.zero_flag(),
+            Comparison::ZERO => chip.zero_flag(),
+            Comparison::CARRY => chip.carry_flag(),
+            Comparison::NOCARRY => !chip.carry_flag(),
         };
 
         if !inst.branch {

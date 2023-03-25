@@ -134,7 +134,6 @@ impl Emu {
                     self.input()
                 }
 
-
                 self.chip.execute(step);
                 self.update_timers();
                 cycles_used += 1;
@@ -157,5 +156,8 @@ mod tests {
     use coverage_helper::test;
 
     #[test]
-    fn test_run() {}
+    fn test_run() {
+        let byte: u8 = 0x0F;
+        println!("{:x}", byte.swap_bytes());
+    }
 }

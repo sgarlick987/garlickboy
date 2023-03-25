@@ -5,9 +5,13 @@ pub mod gpu;
 pub mod instructions;
 pub mod interrupts;
 pub mod joypad;
-pub mod registers;
+mod registers;
 
-use crate::{controller::Controller, display::Display};
+use crate::{
+    controller::Controller,
+    display::Display,
+    utils::{add_bytes_half_carry, sub_bytes_half_carry},
+};
 
 use self::{
     bus::Bus,
@@ -28,10 +32,15 @@ impl GameboyChip {
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
+        if self.pc == 0x0100 {
+            self.print = false;
+        }
         if self.print {
             println!("{:?} pc {:x}", instruction, self.pc);
+            println!("registers before {:X?}", self.registers)
         }
-        instruction.fetch()
+        let fetch = instruction.fetch();
+        fetch
     }
 
     pub fn execute(&mut self, step: Box<dyn FnOnce(&mut GameboyChip)>) {
@@ -114,6 +123,70 @@ impl GameboyChip {
         self.bus.write_bytes(address as usize, bytes);
     }
 
+    fn carry_flag(&mut self) -> bool {
+        self.registers.flags.carry
+    }
+
+    fn update_carry_flag(&mut self, carry: bool) {
+        self.registers.flags.carry = carry;
+    }
+
+    fn set_carry_flag(&mut self) {
+        self.update_carry_flag(true);
+    }
+
+    fn reset_carry_flag(&mut self) {
+        self.update_carry_flag(false);
+    }
+
+    fn half_carry_flag(&mut self) -> bool {
+        self.registers.flags.half_carry
+    }
+
+    fn update_half_carry_flag(&mut self, half_carry: bool) {
+        self.registers.flags.half_carry = half_carry;
+    }
+
+    fn set_half_carry_flag(&mut self) {
+        self.update_half_carry_flag(true);
+    }
+
+    fn reset_half_carry_flag(&mut self) {
+        self.update_half_carry_flag(false);
+    }
+
+    fn zero_flag(&mut self) -> bool {
+        self.registers.flags.zero
+    }
+
+    fn update_zero_flag(&mut self, zero: bool) {
+        self.registers.flags.zero = zero;
+    }
+
+    fn set_zero_flag(&mut self) {
+        self.update_zero_flag(true);
+    }
+
+    fn reset_zero_flag(&mut self) {
+        self.update_zero_flag(false);
+    }
+
+    fn update_negative_flag(&mut self, negative: bool) {
+        self.registers.flags.negative = negative;
+    }
+
+    fn negative_flag(&mut self) -> bool {
+        self.registers.flags.negative
+    }
+
+    fn set_negative_flag(&mut self) {
+        self.update_negative_flag(true);
+    }
+
+    fn reset_negative_flag(&mut self) {
+        self.update_negative_flag(false);
+    }
+
     fn push(&mut self, byte: u8) {
         self.registers.sp = self.registers.sp.wrapping_sub(1);
         self.write_byte(self.registers.sp, byte);
@@ -127,21 +200,20 @@ impl GameboyChip {
 
     fn add(&mut self, value: u8, carry: bool) -> u8 {
         let (added, overflowed) = self.registers.a.carrying_add(value, carry);
-        self.registers.flags.zero = added == 0;
-        self.registers.flags.negative = false;
-        self.registers.flags.carry = overflowed;
-        self.registers.flags.half_carry = (self.registers.a & 0x0F) + (value & 0x0F) > 0x0F;
+        self.update_zero_flag(added == 0);
+        self.reset_negative_flag();
+        self.update_carry_flag(overflowed);
+        self.update_half_carry_flag(add_bytes_half_carry(self.registers.a, value));
 
         added
     }
 
     fn sub(&mut self, value: u8, carry: bool) -> u8 {
         let (subbed, overflowed) = self.registers.a.borrowing_sub(value, carry);
-        self.registers.flags.zero = subbed == 0;
-        self.registers.flags.negative = true;
-        self.registers.flags.carry = overflowed;
-        (_, self.registers.flags.half_carry) =
-            (self.registers.a & 0x0F).overflowing_sub(value & 0x0F);
+        self.update_zero_flag(subbed == 0);
+        self.set_negative_flag();
+        self.update_carry_flag(overflowed);
+        self.update_half_carry_flag(sub_bytes_half_carry(self.registers.a, value));
 
         subbed
     }

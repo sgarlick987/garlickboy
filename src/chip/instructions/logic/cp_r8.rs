@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::{
     chip::{instructions::TargetRegister8, GameboyChip},
-    utils::bytes_half_carry,
+    utils::sub_bytes_half_carry,
 };
 
 // CP A,B - 0xB8
@@ -33,10 +33,10 @@ pub fn new(
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let byte = chip.registers.get_from_enum(&inst.target);
             let a = chip.registers.a;
-            chip.registers.flags.negative = true;
-            chip.registers.flags.zero = a == byte;
-            chip.registers.flags.carry = a < byte;
-            chip.registers.flags.half_carry = bytes_half_carry(a, byte);
+            chip.set_negative_flag();
+            chip.update_zero_flag(a == byte);
+            chip.update_carry_flag(a < byte);
+            chip.update_half_carry_flag(sub_bytes_half_carry(a, byte));
             chip.pc = chip.pc.wrapping_add(1);
         }));
 

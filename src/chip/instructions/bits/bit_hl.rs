@@ -40,9 +40,9 @@ pub fn new(bit: &u8) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)
             let hl = chip.registers.get_hl();
             let byte = chip.read_byte(hl);
 
-            chip.registers.flags.zero = byte & check == 0;
-            chip.registers.flags.negative = false;
-            chip.registers.flags.half_carry = true;
+            chip.update_zero_flag(byte & check == 0);
+            chip.reset_negative_flag();
+            chip.set_half_carry_flag();
 
             chip.pc = chip.pc.wrapping_add(2);
         }));

@@ -30,7 +30,8 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let hl = chip.registers.get_hl();
             let byte = chip.read_byte(hl);
-            chip.registers.a = add(chip, byte, chip.registers.flags.carry);
+            let carry = chip.carry_flag();
+            chip.registers.a = chip.add(byte, carry);
 
             chip.pc = chip.pc.wrapping_add(1);
         }));
@@ -48,14 +49,4 @@ impl Iterator for Inst {
 
         self.executions.pop_front()
     }
-}
-
-pub fn add(chip: &mut GameboyChip, value: u8, carry: bool) -> u8 {
-    let (added, overflowed) = chip.registers.a.carrying_add(value, carry);
-    chip.registers.flags.zero = added == 0;
-    chip.registers.flags.negative = false;
-    chip.registers.flags.carry = overflowed;
-    chip.registers.flags.half_carry = (chip.registers.a & 0x0F) + (value & 0x0F) > 0x0F;
-
-    added
 }

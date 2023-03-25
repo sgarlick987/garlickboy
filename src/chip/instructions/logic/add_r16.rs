@@ -48,10 +48,10 @@ pub fn new(
             _ => panic!("{:?} not implemented for add r16", inst.target),
         };
 
-        let (added, overflowed) = hl.carrying_add(value, chip.registers.flags.carry);
+        let (added, overflowed) = hl.carrying_add(value, chip.carry_flag());
         let (upper, lower) = split_bytes(added);
         chip.registers.l = lower;
-        chip.registers.flags.carry = overflowed;
+        chip.update_carry_flag(overflowed);
 
         inst.upper = upper;
     }));
@@ -60,8 +60,8 @@ pub fn new(
     executions.push_back(Box::new(move |chip: &mut GameboyChip| {
         let inst = inst_ref.borrow();
         chip.registers.h = inst.upper;
-        chip.registers.flags.negative = false;
-        chip.registers.flags.half_carry = false;
+        chip.reset_negative_flag();
+        chip.reset_half_carry_flag();
         chip.pc = chip.pc.wrapping_add(1);
     }));
 
