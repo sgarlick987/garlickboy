@@ -2,8 +2,8 @@
 pub mod bios;
 pub mod bus;
 pub mod gpu;
-pub mod instructions;
-pub mod interrupts;
+mod instructions;
+mod interrupts;
 pub mod joypad;
 mod registers;
 

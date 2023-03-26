@@ -137,8 +137,15 @@ fn new_ptr() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let address = chip.registers.get_hl();
-            let byte = chip.read_byte(address).wrapping_sub(1);
-            chip.write_byte(address, byte);
+            let byte = chip.read_byte(address);
+            let value = byte.wrapping_sub(1);
+
+            chip.write_byte(address, value);
+            chip.set_negative_flag();
+            chip.update_half_carry_flag(sub_bytes_half_carry(byte, 1));
+            chip.update_zero_flag(value == 0);
+            //carry unmodified
+
             chip.pc = chip.pc.wrapping_add(1);
         }));
 

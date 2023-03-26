@@ -9,6 +9,7 @@ pub fn split_bytes(bytes: u16) -> (u8, u8) {
 pub fn add_bytes_half_carry(a: u8, b: u8) -> bool {
     (a & 0x0F) + (b & 0x0F) > 0x0F
 }
+
 pub fn sub_bytes_half_carry(a: u8, b: u8) -> bool {
     (a & 0x0F) < (b & 0x0F)
 }

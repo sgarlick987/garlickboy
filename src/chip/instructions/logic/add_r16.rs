@@ -48,10 +48,11 @@ pub fn new(
             _ => panic!("{:?} not implemented for add r16", inst.target),
         };
 
-        let (added, overflowed) = hl.carrying_add(value, chip.carry_flag());
+        let (added, overflowed) = hl.overflowing_add(value);
         let (upper, lower) = split_bytes(added);
         chip.registers.l = lower;
         chip.update_carry_flag(overflowed);
+        chip.update_half_carry_flag((hl & 0xFF) + (value & 0xFF) > 0xFF);
 
         inst.upper = upper;
     }));
@@ -61,7 +62,7 @@ pub fn new(
         let inst = inst_ref.borrow();
         chip.registers.h = inst.upper;
         chip.reset_negative_flag();
-        chip.reset_half_carry_flag();
+
         chip.pc = chip.pc.wrapping_add(1);
     }));
 

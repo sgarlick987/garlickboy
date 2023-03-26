@@ -2,8 +2,8 @@ use sdl2::pixels::Color;
 
 pub const DEFAULT_PALETTE: Palette = Palette {
     zero: Color::WHITE,
-    one: Color::RGB(221, 221, 221),
-    two: Color::RGB(169, 169, 169),
+    one: Color::RGB(169, 169, 169),
+    two: Color::RGB(84, 84, 84),
     three: Color::BLACK,
 };
 
@@ -59,12 +59,12 @@ impl Palette {
         match upper {
             1 => match lower {
                 1 => Color::BLACK,
-                0 => Color::RGB(169, 169, 169),
+                0 => Color::RGB(84, 84, 84),
                 _ => panic!("invalid color"),
             },
             0 => match lower {
                 0 => Color::WHITE,
-                1 => Color::RGB(221, 221, 221),
+                1 => Color::RGB(169, 169, 169),
                 _ => panic!("invalid color"),
             },
             _ => panic!("invalid color"),
