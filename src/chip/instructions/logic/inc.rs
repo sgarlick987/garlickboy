@@ -139,7 +139,7 @@ fn new_ptr() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
             let address = chip.registers.get_hl();
             let byte = chip.read_byte(address);
             let value = byte.wrapping_add(1);
-            chip.write_byte(address, byte);
+            chip.write_byte(address, value);
             chip.reset_negative_flag();
             chip.update_half_carry_flag(add_bytes_half_carry(byte, 1));
             chip.update_zero_flag(value == 0);
