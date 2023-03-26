@@ -104,7 +104,7 @@ pub enum Instruction {
     LDHU8A,
     LDHAC,
     LDHCA,
-    LDHLSPU8,
+    LDHLSPI8,
     LDSPHL,
     LDSP,
     POP(TargetPushPop),
@@ -625,7 +625,7 @@ impl Instruction {
             0x63 => Instruction::LDR8R8(TargetRegister8::H, TargetRegister8::E), // LD H, E
             0x64 => Instruction::LDR8R8(TargetRegister8::H, TargetRegister8::H), // LD H, H
             0x65 => Instruction::LDR8R8(TargetRegister8::H, TargetRegister8::L), // LD H, L
-            0x66 => Instruction::UNIMPLEMENTED,                                  // LD H, (HL)
+            0x66 => Instruction::LDR8HL(TargetRegister8::H),                     // LD H, (HL)
             0x67 => Instruction::LDR8R8(TargetRegister8::H, TargetRegister8::A), // LD H, A
             0x68 => Instruction::LDR8R8(TargetRegister8::L, TargetRegister8::B), // LD L, B
             0x69 => Instruction::LDR8R8(TargetRegister8::L, TargetRegister8::C), // LD L, C
@@ -633,7 +633,7 @@ impl Instruction {
             0x6B => Instruction::LDR8R8(TargetRegister8::L, TargetRegister8::E), // LD L, E
             0x6C => Instruction::LDR8R8(TargetRegister8::L, TargetRegister8::H), // LD L, H
             0x6D => Instruction::LDR8R8(TargetRegister8::L, TargetRegister8::L), // LD L, L
-            0x6E => Instruction::UNIMPLEMENTED,                                  // LD L, (HL)
+            0x6E => Instruction::LDR8HL(TargetRegister8::L),                     // LD L, (HL)
             0x6F => Instruction::LDR8R8(TargetRegister8::L, TargetRegister8::A), // LD L, A
 
             0x70 => Instruction::LDHLR8(TargetRegister8::B),
@@ -780,7 +780,7 @@ impl Instruction {
             0xF5 => Instruction::PUSH(TargetPushPop::AF), // PUSH AF
             0xF6 => Instruction::ORU8,   // OR A, u8
             0xF7 => Instruction::RST(RstVector::H30), // RST 0x30
-            0xF8 => Instruction::LDHLSPU8, // LD HL, SP+i8
+            0xF8 => Instruction::LDHLSPI8, // LD HL, SP+i8
             0xF9 => Instruction::LDSPHL, // LD SP, HL
             0xFA => Instruction::LDAU16, // LD A, u16
             0xFB => Instruction::EI,     // EI

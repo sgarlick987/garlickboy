@@ -1,5 +1,6 @@
 pub mod adc_hl;
 pub mod adc_r8;
+pub mod adc_u8;
 pub mod add_hl;
 pub mod add_r16;
 pub mod add_r8;
@@ -13,6 +14,7 @@ pub mod cpl;
 pub mod daa;
 pub mod dec;
 pub mod inc;
+pub mod or_hl;
 pub mod or_r8;
 pub mod or_u8;
 pub mod sub_hl;

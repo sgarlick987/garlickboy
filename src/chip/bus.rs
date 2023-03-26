@@ -15,19 +15,27 @@ pub trait Bus {
     fn update_joypad(&mut self, controller: &Controller);
     fn inc_ly(&mut self);
     fn lcd_is_enabled(&mut self) -> bool;
+    fn inc_div(&mut self);
 }
+
+const DMA_ADDRESS: usize = 0xFF46;
+const DIVIDER_ADDRESS: usize = 0xFF04;
+const BIOS_ADDRESS_START: usize = 0x00;
+const BIOS_ADDRESS_END: usize = 0xFF;
 
 pub struct AddressBus {
     bios: Bios,
+    divider: u8,
     memory: [u8; 0x10000],
-    pub gpu: Box<dyn GPU>,
-    pub joypad: Joypad,
+    gpu: Box<dyn GPU>,
+    joypad: Joypad,
 }
 
 impl AddressBus {
     pub fn new(gpu: Box<dyn GPU>, bios: Bios, joypad: Joypad) -> AddressBus {
         AddressBus {
             bios,
+            divider: 0,
             memory: [0; 0x10000],
             gpu,
             joypad,
@@ -48,6 +56,10 @@ impl Bus for AddressBus {
         self.gpu.inc_ly();
     }
 
+    fn inc_div(&mut self) {
+        self.divider = self.divider.wrapping_add(1);
+    }
+
     fn lcd_is_enabled(&mut self) -> bool {
         self.gpu.lcd_is_enabled()
     }
@@ -58,13 +70,14 @@ impl Bus for AddressBus {
             return self.gpu.read_registers(address);
         }
         match address {
-            0x0..=0xFF => {
+            BIOS_ADDRESS_START..=BIOS_ADDRESS_END => {
                 if self.bios.mapped {
                     self.bios.data[address]
                 } else {
                     self.memory[address]
                 }
             }
+            DIVIDER_ADDRESS => self.divider,
             BIOS_MAPPED_ADDRESS => panic!("read from bios mapped address"),
             JOYPAD_ADDRESS => {
                 let byte = self.joypad.read();
@@ -84,9 +97,12 @@ impl Bus for AddressBus {
         match address {
             BIOS_MAPPED_ADDRESS => self.bios.mapped = false,
             JOYPAD_ADDRESS => self.joypad.select(byte),
-            0xFF80 => {
-                self.memory[address] = byte;
+            DIVIDER_ADDRESS => {
+                self.divider = 0;
             }
+            // DMA_ADDRESS => {
+            //     self.dma = true;
+            // }
             0x0000..=0x7FFF => (), // ignore writes to rom
             VRAM_BEGIN..=VRAM_END => {
                 self.gpu.write_vram(address - VRAM_BEGIN, byte);

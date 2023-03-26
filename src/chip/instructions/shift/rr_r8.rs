@@ -34,14 +34,13 @@ pub fn new(
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let register = chip.registers.get_from_enum(&inst.target);
-            let mut value = register >> 1;
-            if chip.carry_flag() {
-                value |= 1 << 7;
-            }
+            let carry_in = chip.carry_flag() as u8;
+            let carry_out = register & 1 == 1;
+            let byte = (register >> 1) | (carry_in << 7);
+            chip.registers.set_from_enum(&inst.target, byte);
 
-            chip.registers.set_from_enum(&inst.target, value);
-            chip.update_carry_flag(register & 1 == 1);
-            chip.update_zero_flag(value == 0);
+            chip.update_carry_flag(carry_out);
+            chip.update_zero_flag(byte == 0);
             chip.reset_half_carry_flag();
             chip.reset_negative_flag();
 

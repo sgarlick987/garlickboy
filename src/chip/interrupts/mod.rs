@@ -43,7 +43,7 @@ impl InterruptHandler {
         InterruptHandler { ime, flags, enable }
     }
 
-    pub fn flag_vblank(&mut self) {
+    pub fn set_vblank_flag(&mut self) {
         self.flags.vblank = true;
     }
 
@@ -73,6 +73,10 @@ impl InterruptHandler {
 
     fn update_ime(&mut self) {
         self.ime = self.ime.next();
+    }
+
+    pub fn is_pending(&mut self) -> bool {
+        u8::from(self.enable) & u8::from(self.flags) != 0
     }
 
     pub fn step(&mut self) -> Box<dyn ExactSizeIterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {

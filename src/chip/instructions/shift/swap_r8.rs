@@ -34,8 +34,9 @@ pub fn new(
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
             let swapped = chip.registers.get_from_enum(&inst.target);
-            let swapped = (swapped & 0x0F) << 4 | (swapped & 0xF0) >> 4;
+            let swapped = (swapped << 4) | (swapped >> 4);
             chip.registers.set_from_enum(&inst.target, swapped);
+
             chip.update_zero_flag(swapped == 0);
             chip.reset_negative_flag();
             chip.reset_half_carry_flag();

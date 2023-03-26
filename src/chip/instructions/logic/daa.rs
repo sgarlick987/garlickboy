@@ -27,18 +27,18 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
             let mut register = chip.registers.a;
             if chip.negative_flag() {
                 if chip.carry_flag() {
-                    register -= 0x60;
+                    register = register.wrapping_sub(0x60);
                 }
                 if chip.half_carry_flag() {
-                    register -= 0x6;
+                    register = register.wrapping_sub(0x6);
                 }
             } else {
                 if chip.carry_flag() || register > 0x99 {
-                    register += 0x60;
+                    register = register.wrapping_add(0x60);
                     chip.set_carry_flag();
                 }
                 if chip.half_carry_flag() || (register & 0xF) > 0x9 {
-                    register += 0x6;
+                    register = register.wrapping_add(0x6);
                 }
             }
 

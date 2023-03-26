@@ -20,6 +20,15 @@ use self::{
     registers::*,
 };
 
+pub struct GameboyChip {
+    pub registers: Registers,
+    interrupt_handler: InterruptHandler,
+    bus: Box<dyn Bus>,
+    pc: u16,
+    pub halted: bool,
+    print: bool,
+}
+
 impl GameboyChip {
     pub fn fetch(&mut self) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         let mut instruction_byte = self.bus.read_byte(self.pc);
@@ -28,19 +37,26 @@ impl GameboyChip {
         if prefixed {
             instruction_byte = self.bus.read_byte(self.pc.wrapping_add(1));
         }
-        let instruction = Instruction::from_byte(instruction_byte, prefixed);
-        if instruction == Instruction::UNIMPLEMENTED {
-            panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
-        }
+        let instruction = if self.halted {
+            if self.interrupt_handler.is_pending() {
+                Instruction::NOP
+            } else {
+                Instruction::HALT
+            }
+        } else {
+            Instruction::from_byte(instruction_byte, prefixed)
+        };
         if self.pc == 0x0100 {
             self.print = false;
+        }
+        if instruction == Instruction::UNIMPLEMENTED {
+            panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);
         }
         if self.print {
             println!("{:?} pc {:x}", instruction, self.pc);
             println!("registers before {:X?}", self.registers)
         }
-        let fetch = instruction.fetch();
-        fetch
+        instruction.fetch()
     }
 
     pub fn execute(&mut self, step: Box<dyn FnOnce(&mut GameboyChip)>) {
@@ -64,14 +80,6 @@ impl GameboyChip {
     }
 }
 
-pub struct GameboyChip {
-    pub registers: Registers,
-    interrupt_handler: InterruptHandler,
-    bus: Box<dyn Bus>,
-    pc: u16,
-    print: bool,
-}
-
 impl GameboyChip {
     pub fn new(bus: Box<dyn Bus>) -> GameboyChip {
         let registers = Registers::new();
@@ -81,6 +89,7 @@ impl GameboyChip {
             interrupt_handler,
             bus,
             pc: 0,
+            halted: false,
             print: false,
         }
     }
@@ -91,8 +100,12 @@ impl GameboyChip {
         self.interrupt_handler.step()
     }
 
+    pub fn inc_div(&mut self) {
+        self.bus.inc_div();
+    }
+
     pub fn flag_vblank(&mut self) {
-        self.interrupt_handler.flag_vblank();
+        self.interrupt_handler.set_vblank_flag();
     }
 
     pub fn write_byte(&mut self, address: u16, byte: u8) {

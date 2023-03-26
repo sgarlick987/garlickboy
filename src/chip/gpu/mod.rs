@@ -10,7 +10,7 @@ pub trait GPU {
     fn write_vram(&mut self, address: usize, byte: u8);
     fn write_registers(&mut self, address: usize, byte: u8);
     fn read_vram(&self, address: usize) -> u8;
-    fn read_registers(&mut self, address: usize) -> u8;
+    fn read_registers(&self, address: usize) -> u8;
     fn update_display(&mut self, display: &mut Display);
     fn inc_ly(&mut self);
     fn lcd_is_enabled(&mut self) -> bool;
@@ -50,36 +50,8 @@ impl PPU {
 }
 
 impl GPU for PPU {
-    fn lcd_is_enabled(&mut self) -> bool {
-        self.lcd_enabled
-    }
-
-    fn update_display(&mut self, display: &mut Display) {
-        if !self.lcd_enabled {
-            display.off();
-            return;
-        }
-        for tile_index in 0u16..1024 {
-            let col = (tile_index as u32) % 32;
-            let row = (tile_index as u32) / 32;
-            self.draw_tile(col * 8, row * 8, tile_index, display);
-        }
-    }
-
-    fn read_registers(&mut self, address: usize) -> u8 {
-        match address {
-            0xFF44 => self.ly,
-            0xFF43 => self.scrollx,
-            0xFF42 => self.scrolly,
-            0xFF40 => {
-                let mut lcd = 0;
-                if self.lcd_enabled {
-                    lcd |= 1 << 7;
-                }
-                lcd
-            }
-            _ => panic!("unimplemented read gpu register {:x}", address),
-        }
+    fn write_vram(&mut self, address: usize, byte: u8) {
+        self.vram[address] = byte;
     }
 
     fn write_registers(&mut self, address: usize, byte: u8) {
@@ -104,12 +76,37 @@ impl GPU for PPU {
         }
     }
 
-    fn write_vram(&mut self, address: usize, byte: u8) {
-        self.vram[address] = byte;
-    }
-
     fn read_vram(&self, address: usize) -> u8 {
         self.vram[address]
+    }
+
+    fn read_registers(&self, address: usize) -> u8 {
+        match address {
+            // 0xFF47 => u8::from(self.palette),
+            0xFF44 => self.ly,
+            0xFF43 => self.scrollx,
+            0xFF42 => self.scrolly,
+            0xFF40 => {
+                let mut lcd = 0;
+                if self.lcd_enabled {
+                    lcd |= 1 << 7;
+                }
+                lcd
+            }
+            _ => panic!("unimplemented read gpu register {:x}", address),
+        }
+    }
+
+    fn update_display(&mut self, display: &mut Display) {
+        if !self.lcd_enabled {
+            display.off();
+            return;
+        }
+        for tile_index in 0u16..1024 {
+            let col = (tile_index as u32) % 32;
+            let row = (tile_index as u32) / 32;
+            self.draw_tile(col * 8, row * 8, tile_index, display);
+        }
     }
 
     fn inc_ly(&mut self) {
@@ -121,6 +118,10 @@ impl GPU for PPU {
         if self.ly == 154 {
             self.ly = 0;
         }
+    }
+
+    fn lcd_is_enabled(&mut self) -> bool {
+        self.lcd_enabled
     }
 }
 

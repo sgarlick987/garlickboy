@@ -24,11 +24,12 @@ pub fn new() -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
+            chip.registers.a = chip.registers.a.rotate_left(1);
+
+            chip.update_carry_flag(chip.registers.a >> 7 == 1);
             chip.reset_half_carry_flag();
             chip.reset_negative_flag();
             chip.reset_zero_flag();
-            chip.update_carry_flag(chip.registers.a >> 7 == 1);
-            chip.registers.a = chip.registers.a << 1;
 
             chip.pc = chip.pc.wrapping_add(1);
         }));

@@ -14,10 +14,11 @@ use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPum
 use crate::chip::GameboyChip;
 
 const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
-const GB_ROM: &str = "./data/Tetris.gb";
+const GB_ROM: &str = "data/Tetris.gb";
 
 struct EventTimers {
     ly: u8,
+    divider: u8,
     vblank: u8,
 }
 
@@ -42,13 +43,18 @@ impl Emu {
             .expect("failed to set fps_manager framerate to 60");
 
         let rom = load_rom(GB_ROM);
-        let bios = load_bios("data/dmg_boot.bin");
+        let mut bios = Bios::new("data/dmg_boot.bin");
+        bios.load();
         let controller = Controller::new();
         let joypad = Joypad::new();
         let gpu = Box::new(PPU::new());
         let bus = Box::new(AddressBus::new(gpu, bios, joypad));
         let chip = GameboyChip::new(bus);
-        let event_timers = EventTimers { ly: 0, vblank: 0 };
+        let event_timers = EventTimers {
+            ly: 0,
+            vblank: 0,
+            divider: 0,
+        };
 
         let mut emu = Emu {
             fps_manager,
@@ -86,7 +92,7 @@ impl Emu {
     fn present(&mut self) {
         self.chip.update_display(&mut self.display);
         self.display.present();
-        self.fps_manager.delay();
+        // self.fps_manager.delay();
     }
 
     fn init_display(&mut self) {
@@ -96,6 +102,11 @@ impl Emu {
     }
 
     fn update_timers(&mut self) {
+        self.event_timers.divider += 1;
+        if self.event_timers.divider == 64 {
+            self.chip.inc_div();
+            self.event_timers.divider = 0;
+        }
         if self.chip.lcd_is_enabled() {
             self.event_timers.ly += 1;
             if self.event_timers.ly == 114 {
@@ -131,7 +142,7 @@ impl Emu {
             for step in steps {
                 if cycles_used == 0 {
                     self.handle_events();
-                    self.input()
+                    self.input();
                 }
 
                 self.chip.execute(step);

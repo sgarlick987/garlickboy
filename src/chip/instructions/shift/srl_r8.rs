@@ -32,12 +32,12 @@ pub fn new(
 
     inst.executions
         .push_back(Box::new(move |chip: &mut GameboyChip| {
-            let mut byte = chip.registers.get_from_enum(&inst.target);
-
-            chip.update_carry_flag(byte & 1 == 1);
-            byte = byte >> 1;
-
+            let register = chip.registers.get_from_enum(&inst.target);
+            let carry_out = register & 1 == 1;
+            let byte = register >> 1;
             chip.registers.set_from_enum(&inst.target, byte);
+
+            chip.update_carry_flag(carry_out);
             chip.update_zero_flag(byte == 0);
             chip.reset_half_carry_flag();
             chip.reset_negative_flag();
