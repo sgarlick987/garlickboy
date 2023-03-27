@@ -1,0 +1,50 @@
+use std::collections::VecDeque;
+
+use crate::gameboy::{Gameboy, GameboyCycle};
+
+// ADC A,u8 - 0xCE
+// Length: 2 bytes
+// Flags
+// Zero	dependent
+// Negative	unset
+// Half Carry	dependent
+// Carry	dependent
+// Group: x8/alu
+// Timing
+// without branch (8t)
+// fetch
+// read	u8
+struct Inst {
+    executions: VecDeque<GameboyCycle>,
+}
+
+pub fn new() -> Box<dyn Iterator<Item = GameboyCycle>> {
+    let mut inst = Inst {
+        executions: VecDeque::with_capacity(2),
+    };
+
+    inst.executions
+        .push_back(Box::new(move |_: &mut Gameboy| {}));
+
+    inst.executions
+        .push_back(Box::new(move |gameboy: &mut Gameboy| {
+            let byte = gameboy.read_byte_pc_lower();
+            let carry = gameboy.carry_flag();
+            gameboy.registers.a = gameboy.add(byte, carry);
+            gameboy.pc = gameboy.pc.wrapping_add(2);
+        }));
+
+    Box::new(inst)
+}
+
+impl Iterator for Inst {
+    type Item = GameboyCycle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.executions.is_empty() {
+            return None;
+        }
+
+        self.executions.pop_front()
+    }
+}
