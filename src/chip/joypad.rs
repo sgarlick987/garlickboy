@@ -1,6 +1,6 @@
 use crate::controller::Controller;
 
-pub const JOYPAD_ADDRESS: usize = 0xFF00;
+pub const JOYPAD_ADDRESS: u16 = 0xFF00;
 
 #[derive(Debug)]
 enum Selected {

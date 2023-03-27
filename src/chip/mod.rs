@@ -30,6 +30,10 @@ pub struct GameboyChip {
 }
 
 impl GameboyChip {
+    pub fn dma(&mut self) {
+        self.bus.handle_dma();
+    }
+
     pub fn fetch(&mut self) -> Box<dyn Iterator<Item = Box<dyn FnOnce(&mut GameboyChip)>>> {
         let mut instruction_byte = self.bus.read_byte(self.pc);
 

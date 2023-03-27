@@ -140,6 +140,7 @@ impl Emu {
                     self.chip.fetch()
                 };
             for step in steps {
+                self.chip.dma();
                 if cycles_used == 0 {
                     self.handle_events();
                     self.input();

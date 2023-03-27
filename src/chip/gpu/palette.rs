@@ -8,10 +8,10 @@ pub const DEFAULT_PALETTE: Palette = Palette {
 };
 
 pub struct Palette {
-    zero: Color,
-    one: Color,
-    two: Color,
-    three: Color,
+    pub zero: Color,
+    pub one: Color,
+    pub two: Color,
+    pub three: Color,
 }
 
 impl std::convert::From<u8> for Palette {
@@ -19,7 +19,7 @@ impl std::convert::From<u8> for Palette {
         Palette {
             zero: Palette::map_color(byte >> 1 & 1, byte & 1),
             one: Palette::map_color(byte >> 3 & 1, byte >> 2 & 1),
-            two: Palette::map_color(byte >> 4 & 1, byte >> 5 & 1),
+            two: Palette::map_color(byte >> 5 & 1, byte >> 4 & 1),
             three: Palette::map_color(byte >> 7 & 1, byte >> 6 & 1),
         }
     }

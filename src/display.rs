@@ -28,7 +28,7 @@ impl Display {
     }
 
     pub fn off(&mut self) {
-        self.canvas.set_draw_color(Color::BLACK);
+        self.canvas.set_draw_color(Color::WHITE);
         self.canvas.clear();
     }
 
