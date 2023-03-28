@@ -9,7 +9,7 @@ pub const VIDEO_SCALE: u32 = 2;
 pub trait Display {
     fn present(&mut self);
     fn off(&mut self);
-    fn draw_pixel(&mut self, x: u32, y: u32, color: Color);
+    fn draw_pixel(&mut self, x: u8, y: u8, color: Color);
 }
 
 pub fn new_sdl_display() -> (Box<dyn Display>, EventPump) {

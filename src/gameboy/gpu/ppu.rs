@@ -32,13 +32,7 @@ impl Ppu {
         self.palette = Palette::from(palette);
     }
 
-    fn draw_tile_sprite(
-        &mut self,
-        x: u32,
-        y: u32,
-        tile_index: u16,
-        display: &mut Box<dyn Display>,
-    ) {
+    fn draw_tile_sprite(&mut self, x: u8, y: u8, tile_index: u16, display: &mut Box<dyn Display>) {
         let mut row = 0;
         let start = tile_index * 16;
         let end = start + 16;
@@ -51,17 +45,15 @@ impl Ppu {
                 continue;
             }
             let y = y - 16;
-            let y = y + (self.scrolly as u32);
             let lower = line[0];
             let upper = line[1];
             let line_pixels = self.palette.bytes_to_color(upper, lower);
             for (i, pixel) in line_pixels.iter().enumerate() {
-                let x = x + (i as u32);
+                let x = x + i as u8;
                 if x < 8 || x >= 168 || *pixel == self.palette.zero {
                     continue;
                 }
                 let x = x - 8;
-                let x = x + (self.scrollx as u32);
                 if *pixel != self.palette.zero {
                     display.draw_pixel(x, y, *pixel);
                 }
@@ -70,24 +62,45 @@ impl Ppu {
         }
     }
 
-    fn draw_tile_bg(&mut self, x: u32, y: u32, tile_index: u16, display: &mut Box<dyn Display>) {
+    fn draw_tile_bg(&mut self, x: u8, y: u8, tile_index: u16, display: &mut Box<dyn Display>) {
         let mut row = 0;
         let tile = self.vram[(tile_index + 0x1800) as usize];
         let start = (tile as u16) * 16;
         let end = start + 16;
 
         for line in self.vram[(start as usize)..(end as usize)].chunks(2) {
+            let y = y + row;
+            let y_start = self.scrolly as u16;
+            let mut y_end = y_start + 144;
+            if y_end > 255 {
+                y_end -= 255;
+            }
+            if (y_end > y_start && (y as u16 >= y_end || (y as u16) < y_start))
+                || (y_end < y_start && (y as u16 + 1 > y_end) && (y as u16 + 1 < y_start))
+            {
+                continue;
+            }
+
             let lower = line[0];
             let upper = line[1];
             let line_pixels = self.palette.bytes_to_color(upper, lower);
             for (i, pixel) in line_pixels.iter().enumerate() {
-                display.draw_pixel(x + (i as u32), y + row, *pixel);
+                let x = x + i as u8;
+                // let x_start = self.scrollx;
+                // let x_end = x_start.wrapping_add(160);
+                // if (x_end > x_start && (x >= x_end as u32 || x < x_start as u32))
+                //     || (x_end < x_start && (x > x_end as u32) && (x <= x_start as u32))
+                // {
+                //     continue;
+                // }
+                if x > 159 {
+                    continue;
+                }
+                display.draw_pixel(x, y - self.scrolly, *pixel);
             }
             row += 1;
         }
     }
-
-    fn draw_sprite(&mut self) {}
 }
 
 impl Gpu for Ppu {
@@ -150,9 +163,9 @@ impl Gpu for Ppu {
         }
 
         for tile_index in 0u16..1024 {
-            let col = (tile_index as u32) % 32;
-            let row = (tile_index as u32) / 32;
-            self.draw_tile_bg(col * 8, row * 8, tile_index, display);
+            let col = (tile_index) % 32;
+            let row = (tile_index) / 32;
+            self.draw_tile_bg(col as u8 * 8, row as u8 * 8, tile_index, display);
         }
 
         for sprite_index in 0..40 {
@@ -163,7 +176,7 @@ impl Gpu for Ppu {
             if y == 0 && x == 0 && tile_index == 0 && attributes == 0 {
                 continue;
             }
-            self.draw_tile_sprite(x as u32, y as u32, tile_index as u16, display);
+            self.draw_tile_sprite(x, y, tile_index as u16, display);
         }
     }
 
