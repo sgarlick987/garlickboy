@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_halt() {
-        const PC: u16 = 1;
+        const PC: u16 = 0;
         const CYCLES: usize = 1;
 
         let mut gameboy = Gameboy::new();

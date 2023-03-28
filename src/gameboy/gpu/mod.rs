@@ -17,7 +17,7 @@ pub trait Gpu {
     fn read_vram(&self, address: u16) -> u8;
     fn read_oam(&self, address: u16) -> u8;
     fn read_registers(&self, address: u16) -> u8;
-    fn update_display(&mut self, display: &mut Box<dyn Display>);
+    fn update(&mut self, display: &mut Box<dyn Display>);
     fn inc_ly(&mut self);
     fn lcd_is_enabled(&mut self) -> bool;
 }
@@ -146,7 +146,7 @@ impl Gpu for Ppu {
         }
     }
 
-    fn update_display(&mut self, display: &mut Box<dyn Display>) {
+    fn update(&mut self, display: &mut Box<dyn Display>) {
         if !self.lcd_enabled {
             display.off();
             return;

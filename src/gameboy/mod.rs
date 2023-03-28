@@ -1,10 +1,8 @@
 #![allow(dead_code)]
-pub mod bios;
 pub mod bus;
 pub mod gpu;
 mod instructions;
 mod interrupts;
-pub mod joypad;
 mod registers;
 
 use crate::{
@@ -17,12 +15,12 @@ use instructions::*;
 use interrupts::{InterruptHandler, IE_ADDRESS, IF_ADDRESS};
 use registers::*;
 
-use self::{bios::Bios, bus::AddressBus, gpu::Ppu, joypad::Joypad};
+use self::bus::new_address_bus;
 
 pub type GameboyCycle = Box<dyn FnOnce(&mut Gameboy)>;
 
 pub struct Gameboy {
-    pub registers: Registers,
+    registers: Registers,
     interrupt_handler: InterruptHandler,
     bus: Box<dyn Bus>,
     pc: u16,
@@ -32,7 +30,7 @@ pub struct Gameboy {
 
 impl Gameboy {
     pub fn dma(&mut self) {
-        self.bus.handle_dma();
+        self.bus.update_dma();
     }
 
     pub fn prefetch(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
@@ -87,11 +85,7 @@ impl Gameboy {
     pub fn new() -> Gameboy {
         let registers = Registers::new();
         let interrupt_handler = InterruptHandler::new();
-        let mut bios = Bios::new("data/dmg_boot.bin");
-        bios.load();
-        let joypad = Joypad::new();
-        let gpu = Box::new(Ppu::new());
-        let bus = Box::new(AddressBus::new(gpu, bios, joypad));
+        let bus = new_address_bus();
 
         Gameboy {
             registers,

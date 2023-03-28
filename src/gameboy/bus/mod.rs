@@ -1,58 +1,41 @@
-use crate::{
-    emu::{controller::Controller, display::Display},
-    utils::merge_bytes,
-};
+mod bios;
+mod dma;
+mod joypad;
 
-use super::{
-    bios::{Bios, BIOS_MAPPED_ADDRESS},
-    gpu::{Gpu, OAM_BEGIN, OAM_END, PPU_REGISTERS, VRAM_BEGIN, VRAM_END},
+use crate::emu::{controller::Controller, display::Display};
+
+use self::{
+    bios::{Bios, BIOS_ADDRESS_END, BIOS_ADDRESS_START},
+    dma::Dma,
     joypad::{Joypad, JOYPAD_ADDRESS},
 };
 
-#[cfg_attr(test, mockall::automock)]
-pub trait Bus {
-    fn read_byte(&mut self, address: u16) -> u8;
-    fn write_byte(&mut self, address: u16, byte: u8);
-    fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
-    fn update_display(&mut self, display: &mut Box<dyn Display>);
-    fn update_joypad(&mut self, controller: &Box<dyn Controller>);
-    fn handle_dma(&mut self);
-    fn inc_ly(&mut self);
-    fn lcd_is_enabled(&mut self) -> bool;
-    fn inc_div(&mut self);
-}
+use super::gpu::{Gpu, Ppu, OAM_BEGIN, OAM_END, PPU_REGISTERS, VRAM_BEGIN, VRAM_END};
 
 const DMA_ADDRESS: u16 = 0xFF46;
 const DIVIDER_ADDRESS: u16 = 0xFF04;
-const BIOS_ADDRESS_START: u16 = 0x00;
-const BIOS_ADDRESS_END: u16 = 0xFF;
 const OAM_ADDRESS_START: u16 = 0xFE00;
 const HRAM_ADDRESS_START: u16 = 0xFF80;
 const HRAM_ADDRESS_END: u16 = 0xFFFE;
+const BIOS_MAPPED_ADDRESS: u16 = 0xFF50;
 
-struct Dma {
-    cycle: u16,
-    address: u16,
-    in_progress: bool,
+pub(crate) trait Bus {
+    fn inc_ly(&mut self);
+    fn inc_div(&mut self);
+    fn lcd_is_enabled(&mut self) -> bool;
+    fn update_display(&mut self, display: &mut Box<dyn Display>);
+    fn update_joypad(&mut self, controller: &Box<dyn Controller>);
+    fn update_dma(&mut self);
+    fn read_byte(&mut self, address: u16) -> u8;
+    fn write_byte(&mut self, address: u16, byte: u8);
+    fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
 }
 
-impl Dma {
-    fn start(&mut self, address: u8) {
-        self.address = merge_bytes(address, 0x00);
-        self.cycle = 0;
-        self.in_progress = true;
-    }
-
-    fn progress(&mut self) {
-        self.cycle += 1;
-        if self.cycle == 160 {
-            self.cycle = 0;
-            self.in_progress = false;
-        }
-    }
+pub(crate) fn new_address_bus() -> Box<dyn Bus> {
+    AddressBus::new()
 }
 
-pub struct AddressBus {
+struct AddressBus {
     bios: Bios,
     divider: u8,
     dma: Dma,
@@ -62,47 +45,24 @@ pub struct AddressBus {
 }
 
 impl AddressBus {
-    pub fn new(gpu: Box<dyn Gpu>, bios: Bios, joypad: Joypad) -> AddressBus {
-        let dma = Dma {
-            cycle: 0,
-            address: 0,
-            in_progress: false,
-        };
+    fn new() -> Box<dyn Bus> {
+        let gpu = Box::new(Ppu::new());
+        let bios = Bios::new();
+        let joypad = Joypad::new();
+        let dma = Dma::new();
 
-        AddressBus {
+        Box::new(Self {
             bios,
             divider: 0,
             dma,
             memory: [0; 0x10000],
             gpu,
             joypad,
-        }
+        })
     }
-}
-
-impl AddressBus {
-    fn dma_copy(&mut self) {}
 }
 
 impl Bus for AddressBus {
-    fn handle_dma(&mut self) {
-        if self.dma.in_progress {
-            let source = self.dma.address + self.dma.cycle;
-            let destination = OAM_ADDRESS_START + self.dma.cycle;
-            let value = self.read_byte(source);
-            self.write_byte(destination, value);
-            self.dma.progress();
-        }
-    }
-
-    fn update_joypad(&mut self, controller: &Box<dyn Controller>) {
-        self.joypad.update(controller);
-    }
-
-    fn update_display(&mut self, display: &mut Box<dyn Display>) {
-        self.gpu.update_display(display);
-    }
-
     fn inc_ly(&mut self) {
         self.gpu.inc_ly();
     }
@@ -113,6 +73,24 @@ impl Bus for AddressBus {
 
     fn lcd_is_enabled(&mut self) -> bool {
         self.gpu.lcd_is_enabled()
+    }
+
+    fn update_joypad(&mut self, controller: &Box<dyn Controller>) {
+        self.joypad.update(controller);
+    }
+
+    fn update_display(&mut self, display: &mut Box<dyn Display>) {
+        self.gpu.update(display);
+    }
+
+    fn update_dma(&mut self) {
+        if self.dma.in_progress {
+            let source = self.dma.source();
+            let destination = self.dma.destination();
+            let value = self.read_byte(source);
+            self.write_byte(destination, value);
+            self.dma.progress();
+        }
     }
 
     fn read_byte(&mut self, address: u16) -> u8 {
@@ -129,6 +107,7 @@ impl Bus for AddressBus {
             }
             DIVIDER_ADDRESS => self.divider,
             BIOS_MAPPED_ADDRESS => panic!("read from bios mapped address"),
+            DMA_ADDRESS => panic!("read from dma source address"),
             JOYPAD_ADDRESS => self.joypad.read(),
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             OAM_BEGIN..=OAM_END => self.gpu.read_oam(address - OAM_BEGIN),

@@ -4,20 +4,17 @@ use crate::utils::*;
 
 use super::instructions::TargetRegister8;
 
-//documented gameboy registers
-//f of the af register is represented
-//by the special FlagsRegister
 #[derive(Debug)]
-pub struct Registers {
-    pub a: u8,
-    pub b: u8,
-    pub c: u8,
-    pub d: u8,
-    pub e: u8,
-    pub h: u8,
-    pub l: u8,
-    pub sp: u16,
-    pub flags: FlagsRegister,
+pub(crate) struct Registers {
+    pub(crate) a: u8,
+    pub(crate) b: u8,
+    pub(crate) c: u8,
+    pub(crate) d: u8,
+    pub(crate) e: u8,
+    pub(crate) h: u8,
+    pub(crate) l: u8,
+    pub(crate) sp: u16,
+    pub(crate) flags: FlagsRegister,
 }
 
 impl Registers {
@@ -108,21 +105,22 @@ impl Registers {
     }
 }
 
-//this represents the lower 8 bits of our AF register
+//flags represents the lower 8 bits of our AF register
 //since it serves a special case of the 4 upper bits being special flags
 //the lower 4 bits are always set to 0 so they aren't represented here.
-#[derive(Debug, Copy, Clone)]
-pub struct FlagsRegister {
-    pub zero: bool,
-    pub negative: bool,
-    pub half_carry: bool,
-    pub carry: bool,
-}
 
 const FLAGS_REGISTER_ZERO_BIT: u8 = 1 << 7;
 const FLAGS_REGISTER_SUBTRACTION_BIT: u8 = 1 << 6;
 const FLAGS_REGISTER_HALF_CARRY_BIT: u8 = 1 << 5;
 const FLAGS_REGISTER_CARRY_BIT: u8 = 1 << 4;
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct FlagsRegister {
+    pub(crate) zero: bool,
+    pub(crate) negative: bool,
+    pub(crate) half_carry: bool,
+    pub(crate) carry: bool,
+}
 
 impl std::convert::From<FlagsRegister> for u8 {
     fn from(flag: FlagsRegister) -> u8 {
@@ -146,8 +144,6 @@ impl std::convert::From<FlagsRegister> for u8 {
     }
 }
 
-//convert a byte to our FlagRegister by shifting right for our flag register byte positions
-//and checking if the bit is set.
 impl std::convert::From<u8> for FlagsRegister {
     fn from(byte: u8) -> Self {
         let zero = (byte & FLAGS_REGISTER_ZERO_BIT) != 0;
