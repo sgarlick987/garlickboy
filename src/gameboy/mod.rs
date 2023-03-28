@@ -1,12 +1,12 @@
 #![allow(dead_code)]
-pub mod bus;
+mod bus;
 pub mod gpu;
 mod instructions;
 mod interrupts;
 mod registers;
 
 use crate::{
-    emu::{controller::Controller, display::Display},
+    emu::{controller::Controller, display::Display, rom::Rom},
     utils::{add_bytes_half_carry, sub_bytes_half_carry},
 };
 
@@ -22,14 +22,71 @@ pub type GameboyCycle = Box<dyn FnOnce(&mut Gameboy)>;
 pub struct Gameboy {
     registers: Registers,
     interrupt_handler: InterruptHandler,
+    timers: Timers,
     bus: Box<dyn Bus>,
     pc: u16,
     halted: bool,
     trace: bool,
 }
 
+struct Timers {
+    ly: u8,
+    divider: u8,
+    vblank: u8,
+}
+
 impl Gameboy {
-    pub fn prefetch(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
+    pub fn new() -> Self {
+        let registers = Registers::new();
+        let interrupt_handler = InterruptHandler::new();
+        let bus = new_address_bus();
+        let timers = Timers {
+            ly: 0,
+            vblank: 0,
+            divider: 0,
+        };
+
+        Self {
+            registers,
+            interrupt_handler,
+            timers,
+            bus,
+            pc: 0,
+            halted: false,
+            trace: false,
+        }
+    }
+
+    pub fn cycles(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
+        let cycles = self.interrupt_handler.cycles();
+        let has_interrupts = cycles.len() != 0;
+
+        if has_interrupts {
+            cycles
+        } else {
+            self.prefetch()
+        }
+    }
+
+    pub fn execute(&mut self, step: GameboyCycle) {
+        self.bus.update_dma();
+        step(self);
+        self.update_timers();
+    }
+
+    pub fn load_rom(&mut self, rom: Rom) {
+        self.bus.write_bytes(0, rom.data);
+    }
+
+    pub fn update_joypad(&mut self, controller: &Box<dyn Controller>) {
+        self.bus.update_joypad(controller);
+    }
+
+    pub fn update_display(&mut self, display: &mut Box<dyn Display>) {
+        self.bus.update_display(display);
+    }
+
+    fn prefetch(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
         let mut instruction_byte = self.bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == BYTE_PREFIX;
@@ -58,55 +115,56 @@ impl Gameboy {
         instruction.fetch()
     }
 
-    pub fn execute(&mut self, step: GameboyCycle) {
-        self.bus.update_dma();
-        step(self);
+    fn update_timers(&mut self) {
+        self.update_div_timer();
+        self.update_ppu_timer();
     }
 
-    pub fn update_joypad(&mut self, controller: &Box<dyn Controller>) {
-        self.bus.update_joypad(controller);
-    }
-
-    pub fn update_display(&mut self, display: &mut Box<dyn Display>) {
-        self.bus.update_display(display);
-    }
-
-    pub fn inc_ly(&mut self) {
-        self.bus.inc_ly();
-    }
-
-    pub fn lcd_is_enabled(&mut self) -> bool {
-        self.bus.lcd_is_enabled()
-    }
-
-    pub fn new() -> Gameboy {
-        let registers = Registers::new();
-        let interrupt_handler = InterruptHandler::new();
-        let bus = new_address_bus();
-
-        Gameboy {
-            registers,
-            interrupt_handler,
-            bus,
-            pc: 0,
-            halted: false,
-            trace: false,
+    fn update_div_timer(&mut self) {
+        self.timers.divider += 1;
+        if self.timers.divider == 64 {
+            self.inc_div();
+            self.timers.divider = 0;
         }
     }
 
-    pub fn interrupts(&mut self) -> Box<dyn ExactSizeIterator<Item = GameboyCycle>> {
-        self.interrupt_handler.step()
+    fn update_ppu_timer(&mut self) {
+        if self.lcd_is_enabled() {
+            self.timers.ly += 1;
+            if self.timers.ly == 114 {
+                self.timers.ly = 0;
+                self.inc_ly();
+                self.timers.vblank += 1;
+            }
+            if self.timers.vblank == 145 {
+                self.flag_vblank();
+            }
+            if self.timers.vblank == 155 {
+                self.timers.vblank = 0;
+            }
+        } else {
+            self.timers.ly = 0;
+            self.timers.vblank = 0;
+        }
     }
 
-    pub fn inc_div(&mut self) {
+    fn inc_ly(&mut self) {
+        self.bus.inc_ly();
+    }
+
+    fn lcd_is_enabled(&mut self) -> bool {
+        self.bus.lcd_is_enabled()
+    }
+
+    fn inc_div(&mut self) {
         self.bus.inc_div();
     }
 
-    pub fn flag_vblank(&mut self) {
+    fn flag_vblank(&mut self) {
         self.interrupt_handler.set_vblank_flag();
     }
 
-    pub fn write_byte(&mut self, address: u16, byte: u8) {
+    fn write_byte(&mut self, address: u16, byte: u8) {
         match address {
             IF_ADDRESS => self.interrupt_handler.set_flags(byte),
             IE_ADDRESS => self.interrupt_handler.set_enable(byte),
@@ -114,7 +172,7 @@ impl Gameboy {
         }
     }
 
-    pub fn read_byte(&mut self, address: u16) -> u8 {
+    fn read_byte(&mut self, address: u16) -> u8 {
         match address {
             IF_ADDRESS => self.interrupt_handler.get_flags(),
             IE_ADDRESS => self.interrupt_handler.get_enable(),
@@ -122,16 +180,12 @@ impl Gameboy {
         }
     }
 
-    pub fn read_byte_pc_lower(&mut self) -> u8 {
+    fn read_byte_pc_lower(&mut self) -> u8 {
         self.read_byte(self.pc.wrapping_add(1))
     }
 
-    pub fn read_byte_pc_upper(&mut self) -> u8 {
+    fn read_byte_pc_upper(&mut self) -> u8 {
         self.read_byte(self.pc.wrapping_add(2))
-    }
-
-    pub fn write_bytes(&mut self, address: u16, bytes: Vec<u8>) {
-        self.bus.write_bytes(address as usize, bytes);
     }
 
     fn carry_flag(&mut self) -> bool {

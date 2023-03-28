@@ -67,6 +67,7 @@ mod tests {
 
         assert!(half_carry);
     }
+
     #[test]
     fn test_sub_bytes_half_carry_not_carried() {
         let a = 0x0F;

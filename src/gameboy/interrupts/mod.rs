@@ -79,7 +79,7 @@ impl InterruptHandler {
         u8::from(self.enable) & u8::from(self.flags) != 0
     }
 
-    pub fn step(&mut self) -> Box<dyn ExactSizeIterator<Item = GameboyCycle>> {
+    pub fn cycles(&mut self) -> Box<dyn ExactSizeIterator<Item = GameboyCycle>> {
         self.update_ime();
         if self.ime.is_enabled() {
             if self.flags.vblank {

@@ -1,23 +1,17 @@
 pub mod controller;
 pub mod display;
-mod rom;
+pub mod rom;
 
 use std::process;
 
 use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPump};
 
-use crate::gameboy::{Gameboy, GameboyCycle};
+use crate::gameboy::Gameboy;
 
 use self::{controller::Controller, display::Display, rom::Rom};
 
 const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
 const GB_ROM: &str = "data/Tetris.gb";
-
-struct EventTimers {
-    ly: u8,
-    divider: u8,
-    vblank: u8,
-}
 
 pub struct Emu {
     gameboy: Gameboy,
@@ -25,40 +19,27 @@ pub struct Emu {
     display: Box<dyn Display>,
     controller: Box<dyn Controller>,
     event_pump: EventPump,
-    event_timers: EventTimers,
-    rom: Rom,
 }
 
 impl Emu {
-    pub fn new() -> Emu {
+    pub fn new() -> Self {
         let (display, event_pump) = display::new_sdl_display();
         let controller = controller::new_keyboard_controller();
-        let gameboy = Gameboy::new();
+        let rom = Rom::new(GB_ROM);
+        let mut gameboy = Gameboy::new();
+        gameboy.load_rom(rom);
         let mut fps_manager = FPSManager::new();
         fps_manager
             .set_framerate(60)
             .expect("failed to set fps_manager framerate to 60");
 
-        let rom = Rom::new(GB_ROM);
-        let event_timers = EventTimers {
-            ly: 0,
-            vblank: 0,
-            divider: 0,
-        };
-
-        let mut emu = Emu {
+        Self {
             fps_manager,
             display,
             gameboy,
-            rom,
             event_pump,
-            event_timers,
             controller,
-        };
-
-        emu.write_rom();
-
-        emu
+        }
     }
 
     fn handle_events(&mut self) {
@@ -92,44 +73,18 @@ impl Emu {
         self.fps_manager.delay();
     }
 
-    fn update_timers(&mut self) {
-        self.event_timers.divider += 1;
-        if self.event_timers.divider == 64 {
-            self.gameboy.inc_div();
-            self.event_timers.divider = 0;
-        }
-        if self.gameboy.lcd_is_enabled() {
-            self.event_timers.ly += 1;
-            if self.event_timers.ly == 114 {
-                self.event_timers.ly = 0;
-                self.gameboy.inc_ly();
-                self.event_timers.vblank += 1;
-            }
-            if self.event_timers.vblank == 145 {
-                self.gameboy.flag_vblank();
-            }
-            if self.event_timers.vblank == 155 {
-                self.event_timers.vblank = 0;
-            }
-        } else {
-            self.event_timers.ly = 0;
-            self.event_timers.vblank = 0;
-        }
-    }
-
     pub fn run(&mut self) {
         self.init_display();
 
         let mut cycles_used = 0;
         loop {
-            for cycle in self.cycles() {
+            for cycle in self.gameboy.cycles() {
                 if cycles_used == 0 {
                     self.handle_events();
                     self.input();
                 }
 
                 self.gameboy.execute(cycle);
-                self.update_timers();
                 cycles_used += 1;
 
                 if cycles_used == MAX_MCYCLES_PER_FRAME {
@@ -138,20 +93,5 @@ impl Emu {
                 }
             }
         }
-    }
-
-    fn cycles(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
-        let interrupts = self.gameboy.interrupts();
-        let has_interrupts = interrupts.len() != 0;
-
-        if has_interrupts {
-            interrupts
-        } else {
-            self.gameboy.prefetch()
-        }
-    }
-
-    fn write_rom(&mut self) {
-        self.gameboy.write_bytes(0, self.rom.data.to_vec());
     }
 }

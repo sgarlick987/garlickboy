@@ -54,7 +54,7 @@ impl Iterator for Inst {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gameboy::{Gameboy};
+    use crate::gameboy::Gameboy;
 
     fn setup_gameboy() -> Gameboy {
         Gameboy::new()
