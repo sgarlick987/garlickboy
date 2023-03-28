@@ -125,10 +125,10 @@ fn load_rom_header_raw(data: Vec<u8>) -> RomHeaderRaw {
 
 fn load_rom_header(data: Vec<u8>) -> RomHeader {
     let rom_header_raw = load_rom_header_raw(data);
-    println!("{:#X?}", rom_header_raw);
     let title = from_utf8(&rom_header_raw.title)
         .expect("invalid utf-8 sequence")
         .to_string();
+    println!("game title: {}", title);
     let gbc_mode: ColorModes = unsafe { ::std::mem::transmute(rom_header_raw.cgb_flag) };
     let ram_size: RamSize = unsafe { ::std::mem::transmute(rom_header_raw.ram_size) };
     let rom_size: RomSize = unsafe { ::std::mem::transmute(rom_header_raw.rom_size) };
@@ -136,7 +136,7 @@ fn load_rom_header(data: Vec<u8>) -> RomHeader {
         unsafe { ::std::mem::transmute(rom_header_raw.destination_code) };
 
     RomHeader {
-        title: title,
+        title,
         gbc_mode: gbc_mode,
         ram_size: ram_size,
         rom_size: rom_size,

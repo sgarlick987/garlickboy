@@ -29,10 +29,6 @@ pub struct Gameboy {
 }
 
 impl Gameboy {
-    pub fn dma(&mut self) {
-        self.bus.update_dma();
-    }
-
     pub fn prefetch(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
         let mut instruction_byte = self.bus.read_byte(self.pc);
 
@@ -63,6 +59,7 @@ impl Gameboy {
     }
 
     pub fn execute(&mut self, step: GameboyCycle) {
+        self.bus.update_dma();
         step(self);
     }
 

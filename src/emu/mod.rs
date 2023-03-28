@@ -128,7 +128,6 @@ impl Emu {
                     self.input();
                 }
 
-                self.gameboy.dma();
                 self.gameboy.execute(cycle);
                 self.update_timers();
                 cycles_used += 1;
