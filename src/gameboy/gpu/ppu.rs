@@ -16,6 +16,22 @@ pub(crate) struct Ppu {
 }
 
 impl Ppu {
+    pub fn new() -> Box<dyn Gpu> {
+        Box::new(Self {
+            vram: [0; VRAM_SIZE as usize],
+            oam: [0; OAM_SIZE as usize],
+            palette: DEFAULT_PALETTE,
+            scrollx: 0,
+            scrolly: 0,
+            ly: 0,
+            lcd_enabled: false,
+        })
+    }
+
+    fn set_palette(&mut self, palette: u8) {
+        self.palette = Palette::from(palette);
+    }
+
     fn draw_tile_sprite(
         &mut self,
         x: u32,
@@ -164,23 +180,5 @@ impl Gpu for Ppu {
 
     fn lcd_is_enabled(&mut self) -> bool {
         self.lcd_enabled
-    }
-}
-
-impl Ppu {
-    pub fn new() -> Box<dyn Gpu> {
-        Box::new(Self {
-            vram: [0; VRAM_SIZE as usize],
-            oam: [0; OAM_SIZE as usize],
-            palette: DEFAULT_PALETTE,
-            scrollx: 0,
-            scrolly: 0,
-            ly: 0,
-            lcd_enabled: false,
-        })
-    }
-
-    fn set_palette(&mut self, palette: u8) {
-        self.palette = Palette::from(palette);
     }
 }
