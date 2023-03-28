@@ -18,9 +18,11 @@ impl Dma {
     }
 
     pub(crate) fn start(&mut self, address: u8) {
-        self.address = merge_bytes(address, 0x00);
-        self.cycle = 0;
-        self.in_progress = true;
+        if address != 0 {
+            self.address = merge_bytes(address, 0x00);
+            self.cycle = 0;
+            self.in_progress = true;
+        }
     }
 
     pub(crate) fn progress(&mut self) {

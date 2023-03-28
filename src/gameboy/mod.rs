@@ -74,8 +74,8 @@ impl Gameboy {
         self.update_timers();
     }
 
-    pub fn load_rom(&mut self, rom: Rom) {
-        self.bus.write_bytes(0, rom.data);
+    pub fn load_rom(&mut self, rom: &Rom) {
+        self.bus.load_rom(rom);
     }
 
     pub fn update_joypad(&mut self, controller: &Box<dyn Controller>) {

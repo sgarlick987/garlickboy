@@ -27,7 +27,7 @@ impl Emu {
         let controller = controller::new_keyboard_controller();
         let rom = Rom::new(GB_ROM);
         let mut gameboy = Gameboy::new();
-        gameboy.load_rom(rom);
+        gameboy.load_rom(&rom);
         let mut fps_manager = FPSManager::new();
         fps_manager
             .set_framerate(60)
