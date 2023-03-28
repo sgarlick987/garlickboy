@@ -67,11 +67,10 @@ impl ExactSizeIterator for Inst {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gameboy::{bus::MockBus, instructions::TargetRegister8, Gameboy};
+    use crate::gameboy::{instructions::TargetRegister8, Gameboy};
 
     fn setup_gameboy() -> Gameboy {
-        let bus = Box::new(MockBus::new());
-        Gameboy::new(bus)
+        Gameboy::new()
     }
 
     #[test]

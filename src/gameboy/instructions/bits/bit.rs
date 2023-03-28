@@ -59,14 +59,13 @@ impl Iterator for Inst {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy::bus::MockBus;
+
     use coverage_helper::test;
 
     use super::*;
 
     fn setup_gameboy() -> Gameboy {
-        let bus = Box::new(MockBus::new());
-        Gameboy::new(bus)
+        Gameboy::new()
     }
     const TARGETS: [TargetRegister8; 7] = [
         TargetRegister8::A,

@@ -82,29 +82,29 @@ pub struct Rom {
     pub data: Vec<u8>,
 }
 
-pub fn load_rom(path: &str) -> Rom {
-    let data = load_rom_bytes(path);
-    let header = load_rom_header(data.clone());
-    let generated_header_checksum = generate_header_checksum(data.clone());
-    let generated_global_checksum = generate_global_checksum(data.clone());
+impl Rom {
+    pub fn new(path: &str) -> Self {
+        let data = load_rom_bytes(path);
+        let header = load_rom_header(data.clone());
+        let generated_header_checksum = generate_header_checksum(data.clone());
+        let generated_global_checksum = generate_global_checksum(data.clone());
 
-    if generated_global_checksum != header.global_checksum
-        || generated_header_checksum != header.header_checksum
-    {
-        println!("checksum mismatch");
-        println!("generated global checksum: {}", generated_global_checksum);
-        println!("loaded global checksum: {}", header.global_checksum);
-        println!("generated header checksum: {}", generated_header_checksum);
-        println!("loaded header checksum: {}", header.header_checksum);
-    }
+        if generated_global_checksum != header.global_checksum
+            || generated_header_checksum != header.header_checksum
+        {
+            println!("checksum mismatch");
+            println!("generated global checksum: {}", generated_global_checksum);
+            println!("loaded global checksum: {}", header.global_checksum);
+            println!("generated header checksum: {}", generated_header_checksum);
+            println!("loaded header checksum: {}", header.header_checksum);
+        }
 
-    println!("{:#?}", header);
-    Rom {
-        header: header,
-        data: data.to_vec(),
+        Self {
+            header: header,
+            data: data.to_vec(),
+        }
     }
 }
-
 fn load_rom_header_raw(data: Vec<u8>) -> RomHeaderRaw {
     RomHeaderRaw {
         title: data[0x134..0x143].to_vec(),

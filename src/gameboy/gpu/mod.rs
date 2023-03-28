@@ -1,5 +1,6 @@
 pub mod palette;
-use crate::display::Display;
+
+use crate::emu::display::Display;
 
 use self::palette::*;
 pub const VRAM_BEGIN: u16 = 0x8000;
@@ -16,7 +17,7 @@ pub trait Gpu {
     fn read_vram(&self, address: u16) -> u8;
     fn read_oam(&self, address: u16) -> u8;
     fn read_registers(&self, address: u16) -> u8;
-    fn update_display(&mut self, display: &mut Display);
+    fn update_display(&mut self, display: &mut Box<dyn Display>);
     fn inc_ly(&mut self);
     fn lcd_is_enabled(&mut self) -> bool;
 }
@@ -34,7 +35,13 @@ pub struct Ppu {
 pub const PPU_REGISTERS: [u16; 5] = [0xFF40, 0xFF42, 0xFF43, 0xFF44, 0xFF47];
 
 impl Ppu {
-    fn draw_tile_sprite(&mut self, x: u32, y: u32, tile_index: u16, display: &mut Display) {
+    fn draw_tile_sprite(
+        &mut self,
+        x: u32,
+        y: u32,
+        tile_index: u16,
+        display: &mut Box<dyn Display>,
+    ) {
         let mut row = 0;
         let start = tile_index * 16;
         let end = start + 16;
@@ -66,7 +73,7 @@ impl Ppu {
         }
     }
 
-    fn draw_tile_bg(&mut self, x: u32, y: u32, tile_index: u16, display: &mut Display) {
+    fn draw_tile_bg(&mut self, x: u32, y: u32, tile_index: u16, display: &mut Box<dyn Display>) {
         let mut row = 0;
         let tile = self.vram[(tile_index + 0x1800) as usize];
         let start = (tile as u16) * 16;
@@ -139,7 +146,7 @@ impl Gpu for Ppu {
         }
     }
 
-    fn update_display(&mut self, display: &mut Display) {
+    fn update_display(&mut self, display: &mut Box<dyn Display>) {
         if !self.lcd_enabled {
             display.off();
             return;

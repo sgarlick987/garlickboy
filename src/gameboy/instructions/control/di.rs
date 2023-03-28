@@ -17,7 +17,7 @@ struct Inst {
     executions: VecDeque<GameboyCycle>,
 }
 
-pub fn new() -> Box<dyn Iterator<Item = GameboyCycle>> {
+pub fn new() -> Box<dyn ExactSizeIterator<Item = GameboyCycle>> {
     let mut inst = Inst {
         executions: VecDeque::with_capacity(1),
     };
@@ -42,9 +42,14 @@ impl Iterator for Inst {
     }
 }
 
+impl ExactSizeIterator for Inst {
+    fn len(&self) -> usize {
+        self.executions.len()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::gameboy::bus::*;
     use coverage_helper::test;
 
     use super::*;
@@ -52,17 +57,16 @@ mod tests {
     #[test]
     fn test_di() {
         const PC: u16 = 1;
+        const CYCLES: usize = 1;
 
-        let bus = Box::new(MockBus::new());
-        let mut gameboy = Gameboy::new(bus);
+        let mut gameboy = Gameboy::new();
 
-        let mut cycles = 0;
-        for inst in new() {
-            inst(&mut gameboy);
-            cycles += 1;
+        let cycles = new();
+        assert_eq!(cycles.len(), CYCLES);
+        for cycle in cycles {
+            gameboy.execute(cycle);
         }
 
-        assert_eq!(cycles, 1);
         assert_eq!(gameboy.pc, PC);
     }
 }

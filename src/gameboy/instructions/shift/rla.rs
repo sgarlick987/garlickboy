@@ -54,11 +54,10 @@ impl Iterator for Inst {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gameboy::{bus::MockBus, Gameboy};
+    use crate::gameboy::{Gameboy};
 
     fn setup_gameboy() -> Gameboy {
-        let bus = Box::new(MockBus::new());
-        Gameboy::new(bus)
+        Gameboy::new()
     }
 
     #[test]

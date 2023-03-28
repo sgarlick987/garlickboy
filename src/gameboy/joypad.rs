@@ -1,16 +1,14 @@
-use crate::controller::Controller;
+use crate::emu::controller::Controller;
 
 pub const JOYPAD_ADDRESS: u16 = 0xFF00;
 
-#[derive(Debug)]
 enum Selected {
     Directions,
     Actions,
     None,
 }
 
-#[derive(Debug)]
-pub struct Joypad {
+pub(crate) struct Joypad {
     directions: u8,
     actions: u8,
     selected: Selected,
@@ -44,7 +42,8 @@ impl Joypad {
         }
     }
 
-    pub fn update(&mut self, controller: &Controller) {
-        (self.directions, self.actions) = controller.joypad();
+    pub fn update(&mut self, controller: &Box<dyn Controller>) {
+        self.actions = controller.actions();
+        self.directions = controller.directions();
     }
 }

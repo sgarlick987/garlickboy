@@ -1,17 +1,14 @@
-use std::process;
+pub mod controller;
+pub mod display;
+mod rom;
 
-use crate::{
-    controller::Controller,
-    display::Display,
-    gameboy::bios::*,
-    gameboy::{bus::AddressBus, joypad::Joypad},
-    gameboy::{gpu::Ppu, GameboyCycle},
-    rom::*,
-};
+use std::process;
 
 use sdl2::{event::Event, gfx::framerate::FPSManager, keyboard::Keycode, EventPump};
 
-use crate::gameboy::Gameboy;
+use crate::gameboy::{Gameboy, GameboyCycle};
+
+use self::{controller::Controller, display::Display, rom::Rom};
 
 const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
 const GB_ROM: &str = "data/Tetris.gb";
@@ -25,8 +22,8 @@ struct EventTimers {
 pub struct Emu {
     gameboy: Gameboy,
     fps_manager: FPSManager,
-    display: Display,
-    controller: Controller,
+    display: Box<dyn Display>,
+    controller: Box<dyn Controller>,
     event_pump: EventPump,
     event_timers: EventTimers,
     rom: Rom,
@@ -34,17 +31,15 @@ pub struct Emu {
 
 impl Emu {
     pub fn new() -> Emu {
-        let sdl = sdl2::init().expect("failed to init sdl2");
-        let event_pump = sdl.event_pump().expect("failed to get event_pump");
-        let display = Display::new(sdl);
+        let (display, event_pump) = display::new_sdl_display();
+        let controller = controller::new_keyboard_controller();
+        let gameboy = Gameboy::new();
         let mut fps_manager = FPSManager::new();
         fps_manager
             .set_framerate(60)
             .expect("failed to set fps_manager framerate to 60");
 
-        let rom = load_rom(GB_ROM);
-        let controller = Controller::new();
-        let gameboy = Gameboy::new();
+        let rom = Rom::new(GB_ROM);
         let event_timers = EventTimers {
             ly: 0,
             vblank: 0,
@@ -80,7 +75,8 @@ impl Emu {
     }
 
     fn input(&mut self) {
-        self.controller = Controller::from(self.event_pump.keyboard_state());
+        let event_pump = &self.event_pump;
+        self.controller.read(event_pump);
         self.gameboy.update_joypad(&self.controller);
     }
 

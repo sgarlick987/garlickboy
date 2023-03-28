@@ -8,8 +8,7 @@ pub mod joypad;
 mod registers;
 
 use crate::{
-    controller::Controller,
-    display::Display,
+    emu::{controller::Controller, display::Display},
     utils::{add_bytes_half_carry, sub_bytes_half_carry},
 };
 
@@ -69,11 +68,11 @@ impl Gameboy {
         step(self);
     }
 
-    pub fn update_joypad(&mut self, controller: &Controller) {
+    pub fn update_joypad(&mut self, controller: &Box<dyn Controller>) {
         self.bus.update_joypad(controller);
     }
 
-    pub fn update_display(&mut self, display: &mut Display) {
+    pub fn update_display(&mut self, display: &mut Box<dyn Display>) {
         self.bus.update_display(display);
     }
 

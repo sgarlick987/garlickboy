@@ -3,13 +3,12 @@ use std::cell::RefCell;
 use sdl2::{
     pixels::{Color, PixelFormat},
     render::{Canvas, Texture, TextureCreator},
-    EventPump, Sdl,
+    Sdl,
 };
 
-pub const VIDEO_SCALE: u32 = 2;
+use super::{Display, VIDEO_SCALE};
 
-pub struct Display {
-    sdl: Sdl,
+pub(crate) struct SdlDisplay {
     canvas: Canvas<sdl2::video::Window>,
     texture_creator: TextureCreator<sdl2::video::WindowContext>,
     texture: RefCell<Texture<'static>>,
@@ -17,8 +16,8 @@ pub struct Display {
     width: u32,
 }
 
-impl Display {
-    pub fn present(&mut self) {
+impl Display for SdlDisplay {
+    fn present(&mut self) {
         let mut texture = self.texture.borrow_mut();
         texture
             .update(None, self.data_raw(), (self.width * 4) as usize)
@@ -27,25 +26,19 @@ impl Display {
         self.canvas.present();
     }
 
-    pub fn off(&mut self) {
+    fn off(&mut self) {
         self.canvas.set_draw_color(Color::WHITE);
         self.canvas.clear();
     }
 
-    pub fn draw_pixel(&mut self, x: u32, y: u32, color: Color) {
+    fn draw_pixel(&mut self, x: u32, y: u32, color: Color) {
         self.data[(y * self.width + x) as usize] = color
             .to_u32(&PixelFormat::try_from(self.texture_creator.default_pixel_format()).unwrap());
     }
+}
 
-    fn data_raw(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts(self.data.as_ptr() as *const u8, self.data.len() * 4) }
-    }
-
-    pub fn event_pump(&mut self) -> EventPump {
-        self.sdl.event_pump().unwrap()
-    }
-
-    pub fn new(sdl: Sdl) -> Display {
+impl SdlDisplay {
+    pub(crate) fn new(sdl: Sdl) -> Box<dyn Display> {
         let video = sdl.video().expect("failed to get video subsystem");
         let window = video
             .window("GarlickBoy", 256 * VIDEO_SCALE, 256 * VIDEO_SCALE)
@@ -66,13 +59,16 @@ impl Display {
 
         let texture = unsafe { std::mem::transmute::<_, Texture<'static>>(texture) };
 
-        Display {
-            sdl,
+        Box::new(Self {
             canvas,
             texture_creator,
             texture: RefCell::new(texture),
             data: vec![0; (256 * 256) as usize],
             width: 256,
-        }
+        })
+    }
+
+    fn data_raw(&self) -> &[u8] {
+        unsafe { std::slice::from_raw_parts(self.data.as_ptr() as *const u8, self.data.len() * 4) }
     }
 }

@@ -44,7 +44,6 @@ impl Iterator for Inst {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy::bus::*;
     use coverage_helper::test;
 
     use super::*;

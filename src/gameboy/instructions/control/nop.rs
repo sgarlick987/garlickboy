@@ -41,7 +41,7 @@ impl Iterator for Inst {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy::bus::*;
+    
     use coverage_helper::test;
 
     use super::*;
@@ -50,8 +50,7 @@ mod tests {
     fn test_nop() {
         const PC: u16 = 1;
 
-        let bus = Box::new(MockBus::new());
-        let mut gameboy = Gameboy::new(bus);
+        let mut gameboy = Gameboy::new();
 
         let mut cycles = 0;
         for inst in new() {

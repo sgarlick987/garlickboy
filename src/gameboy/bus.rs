@@ -1,4 +1,7 @@
-use crate::{controller::Controller, display::Display, utils::merge_bytes};
+use crate::{
+    emu::{controller::Controller, display::Display},
+    utils::merge_bytes,
+};
 
 use super::{
     bios::{Bios, BIOS_MAPPED_ADDRESS},
@@ -11,8 +14,8 @@ pub trait Bus {
     fn read_byte(&mut self, address: u16) -> u8;
     fn write_byte(&mut self, address: u16, byte: u8);
     fn write_bytes(&mut self, address: usize, bytes: Vec<u8>);
-    fn update_display(&mut self, display: &mut Display);
-    fn update_joypad(&mut self, controller: &Controller);
+    fn update_display(&mut self, display: &mut Box<dyn Display>);
+    fn update_joypad(&mut self, controller: &Box<dyn Controller>);
     fn handle_dma(&mut self);
     fn inc_ly(&mut self);
     fn lcd_is_enabled(&mut self) -> bool;
@@ -92,11 +95,11 @@ impl Bus for AddressBus {
         }
     }
 
-    fn update_joypad(&mut self, controller: &Controller) {
+    fn update_joypad(&mut self, controller: &Box<dyn Controller>) {
         self.joypad.update(controller);
     }
 
-    fn update_display(&mut self, display: &mut Display) {
+    fn update_display(&mut self, display: &mut Box<dyn Display>) {
         self.gpu.update_display(display);
     }
 
