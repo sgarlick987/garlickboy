@@ -70,29 +70,15 @@ impl Ppu {
 
         for line in self.vram[(start as usize)..(end as usize)].chunks(2) {
             let y = y + row;
-            let y_start = self.scrolly as u16;
-            let mut y_end = y_start + 144;
-            if y_end > 255 {
-                y_end -= 255;
-            }
-            if (y_end > y_start && (y as u16 >= y_end || (y as u16) < y_start))
-                || (y_end < y_start && (y as u16 + 1 > y_end) && (y as u16 + 1 < y_start))
-            {
+            if y < self.scrolly || y > (self.scrolly + 143) {
+                row += 1;
                 continue;
             }
-
             let lower = line[0];
             let upper = line[1];
             let line_pixels = self.palette.bytes_to_color(upper, lower);
             for (i, pixel) in line_pixels.iter().enumerate() {
                 let x = x + i as u8;
-                // let x_start = self.scrollx;
-                // let x_end = x_start.wrapping_add(160);
-                // if (x_end > x_start && (x >= x_end as u32 || x < x_start as u32))
-                //     || (x_end < x_start && (x > x_end as u32) && (x <= x_start as u32))
-                // {
-                //     continue;
-                // }
                 if x > 159 {
                     continue;
                 }

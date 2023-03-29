@@ -30,7 +30,7 @@ impl Joypad {
         match self.selected {
             Selected::Actions => self.actions,
             Selected::Directions => self.directions,
-            Selected::None => 0xFF,
+            Selected::None => 0x0F,
         }
     }
 

@@ -31,7 +31,7 @@ pub struct Gameboy {
 
 struct Timers {
     ly: u8,
-    divider: u8,
+    div: u8,
     vblank: u8,
 }
 
@@ -43,7 +43,7 @@ impl Gameboy {
         let timers = Timers {
             ly: 0,
             vblank: 0,
-            divider: 0,
+            div: 0,
         };
 
         Self {
@@ -121,10 +121,10 @@ impl Gameboy {
     }
 
     fn update_div_timer(&mut self) {
-        self.timers.divider += 1;
-        if self.timers.divider == 64 {
+        self.timers.div += 1;
+        if self.timers.div == 64 {
             self.inc_div();
-            self.timers.divider = 0;
+            self.timers.div = 0;
         }
     }
 

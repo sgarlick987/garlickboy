@@ -67,14 +67,8 @@ impl Emu {
         self.fps_manager.delay();
     }
 
-    fn init_display(&mut self) {
-        self.display.off();
-        self.display.present();
-        self.fps_manager.delay();
-    }
-
     pub fn run(&mut self) {
-        self.init_display();
+        self.display.present();
 
         let mut cycles_used = 0;
         loop {

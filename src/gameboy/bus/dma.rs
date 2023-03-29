@@ -6,6 +6,7 @@ pub(crate) struct Dma {
     pub(crate) cycle: u16,
     pub(crate) address: u16,
     pub(crate) in_progress: bool,
+    pub(crate) upper: u8,
 }
 
 impl Dma {
@@ -14,12 +15,14 @@ impl Dma {
             cycle: 0,
             address: 0,
             in_progress: false,
+            upper: 0,
         }
     }
 
     pub(crate) fn start(&mut self, address: u8) {
         if address != 0 {
-            self.address = merge_bytes(address, 0x00);
+            self.upper = address;
+            self.address = merge_bytes(self.upper, 0x00);
             self.cycle = 0;
             self.in_progress = true;
         }
@@ -36,6 +39,7 @@ impl Dma {
     pub(crate) fn source(&self) -> u16 {
         self.address + self.cycle
     }
+
     pub(crate) fn destination(&self) -> u16 {
         OAM_ADDRESS_START + self.cycle
     }

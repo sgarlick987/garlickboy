@@ -6,7 +6,7 @@ use sdl2::{
     Sdl,
 };
 
-use super::{Display, VIDEO_SCALE};
+use super::{Display, VIDEO_HEIGHT, VIDEO_SCALE, VIDEO_WIDTH};
 
 pub(crate) struct SdlDisplay {
     canvas: Canvas<sdl2::video::Window>,
@@ -24,12 +24,10 @@ impl Display for SdlDisplay {
             .expect("failed to update screen texture");
         self.canvas.copy(&texture, None, None).unwrap();
         self.canvas.present();
-        self.canvas.clear();
     }
 
     fn off(&mut self) {
-        self.canvas.set_draw_color(Color::WHITE);
-        self.canvas.clear();
+        self.data.fill(u32::MAX)
     }
 
     fn draw_pixel(&mut self, x: u8, y: u8, color: Color) {
@@ -43,37 +41,44 @@ impl Display for SdlDisplay {
 
 impl SdlDisplay {
     pub(crate) fn new(sdl: Sdl) -> Box<dyn Display> {
+        let video_width = VIDEO_WIDTH as u32;
+        let video_height = VIDEO_HEIGHT as u32;
         let video = sdl.video().expect("failed to get video subsystem");
         let window = video
-            .window("GarlickBoy", 160 * VIDEO_SCALE, 144 * VIDEO_SCALE)
+            .window(
+                "GarlickBoy",
+                video_width * VIDEO_SCALE,
+                video_height * VIDEO_SCALE,
+            )
             .position_centered()
-            .allow_highdpi()
             .opengl()
             .build()
             .expect("failed to build window");
-        let mut canvas = window
+        let canvas = window
             .into_canvas()
             .accelerated()
             .build()
             .expect("failed to convert window into canvas");
         let texture_creator = canvas.texture_creator();
         let texture = texture_creator
-            .create_texture_target(texture_creator.default_pixel_format(), 160, 144)
+            .create_texture_target(
+                texture_creator.default_pixel_format(),
+                video_width,
+                video_height,
+            )
             .unwrap();
-
-        canvas.set_draw_color(Color::WHITE);
-        canvas.clear();
-        canvas.present();
 
         let texture = unsafe { std::mem::transmute::<_, Texture<'static>>(texture) };
 
-        Box::new(Self {
+        let mut display = Box::new(Self {
             canvas,
             texture_creator,
             texture: RefCell::new(texture),
-            data: vec![0; (160 * 144) as usize],
-            width: 160,
-        })
+            data: vec![0; (video_width * video_height) as usize],
+            width: VIDEO_WIDTH,
+        });
+        display.off();
+        display
     }
 
     fn data_raw(&self) -> &[u8] {

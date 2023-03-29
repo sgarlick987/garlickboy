@@ -4,7 +4,9 @@ use sdl2::{pixels::Color, EventPump};
 
 use self::sdl::SdlDisplay;
 
-pub const VIDEO_SCALE: u32 = 2;
+pub const VIDEO_SCALE: u32 = 3;
+pub const VIDEO_WIDTH: u8 = 160;
+pub const VIDEO_HEIGHT: u8 = 144;
 
 pub trait Display {
     fn present(&mut self);

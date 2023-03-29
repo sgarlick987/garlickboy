@@ -107,7 +107,7 @@ impl Bus for AddressBus {
             }
             DIV_ADDRESS => self.div,
             BIOS_MAPPED_ADDRESS => panic!("read from bios mapped address"),
-            DMA_ADDRESS => panic!("read from dma source address"),
+            DMA_ADDRESS => self.dma.upper,
             JOYPAD_ADDRESS => self.joypad.read(),
             VRAM_BEGIN..=VRAM_END => self.gpu.read_vram(address - VRAM_BEGIN),
             OAM_BEGIN..=OAM_END => self.gpu.read_oam(address - OAM_BEGIN),
