@@ -33,7 +33,7 @@ pub fn new() -> Box<dyn Iterator<Item = GameboyCycle>> {
 
             gameboy.reset_negative_flag();
             gameboy.reset_carry_flag();
-            gameboy.update_zero_flag(gameboy.registers.a == 0);
+            gameboy.write_zero_flag(gameboy.registers.a == 0);
             gameboy.set_half_carry_flag();
             gameboy.pc = gameboy.pc.wrapping_add(2);
         }));

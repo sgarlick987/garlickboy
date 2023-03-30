@@ -30,7 +30,7 @@ pub fn new() -> Box<dyn Iterator<Item = GameboyCycle>> {
             let byte = (register >> 1) | (carry_in << 7);
             gameboy.registers.a = byte;
 
-            gameboy.update_carry_flag(carry_out);
+            gameboy.write_carry_flag(carry_out);
             gameboy.reset_zero_flag();
             gameboy.reset_half_carry_flag();
             gameboy.reset_negative_flag();

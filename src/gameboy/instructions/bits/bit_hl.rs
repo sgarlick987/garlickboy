@@ -40,7 +40,7 @@ pub fn new(bit: &u8) -> Box<dyn Iterator<Item = GameboyCycle>> {
             let hl = gameboy.registers.get_hl();
             let byte = gameboy.read_byte(hl);
 
-            gameboy.update_zero_flag(byte & check == 0);
+            gameboy.write_zero_flag(byte & check == 0);
             gameboy.reset_negative_flag();
             gameboy.set_half_carry_flag();
 

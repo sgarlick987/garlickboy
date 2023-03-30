@@ -26,7 +26,7 @@ pub fn new() -> Box<dyn Iterator<Item = GameboyCycle>> {
         .push_back(Box::new(move |gameboy: &mut Gameboy| {
             gameboy.registers.a = gameboy.registers.a.rotate_left(1);
 
-            gameboy.update_carry_flag(gameboy.registers.a >> 7 == 1);
+            gameboy.write_carry_flag(gameboy.registers.a >> 7 == 1);
             gameboy.reset_half_carry_flag();
             gameboy.reset_negative_flag();
             gameboy.reset_zero_flag();

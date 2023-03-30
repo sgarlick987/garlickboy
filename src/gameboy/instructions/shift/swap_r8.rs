@@ -35,7 +35,7 @@ pub fn new(target: &TargetRegister8) -> Box<dyn Iterator<Item = GameboyCycle>> {
             let swapped = (swapped << 4) | (swapped >> 4);
             gameboy.registers.set_from_enum(&inst.target, swapped);
 
-            gameboy.update_zero_flag(swapped == 0);
+            gameboy.write_zero_flag(swapped == 0);
             gameboy.reset_negative_flag();
             gameboy.reset_half_carry_flag();
             gameboy.reset_carry_flag();

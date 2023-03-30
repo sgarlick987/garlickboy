@@ -29,7 +29,7 @@ pub fn new() -> Box<dyn Iterator<Item = GameboyCycle>> {
     inst.executions
         .push_back(Box::new(move |gameboy: &mut Gameboy| {
             gameboy.registers.a ^= gameboy.read_byte_pc_lower();
-            gameboy.update_zero_flag(gameboy.registers.a == 0);
+            gameboy.write_zero_flag(gameboy.registers.a == 0);
             gameboy.reset_negative_flag();
             gameboy.reset_half_carry_flag();
             gameboy.reset_carry_flag();

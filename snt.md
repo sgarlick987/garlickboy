@@ -62,6 +62,8 @@ PPU, joypad through the address bus.
 A program counter is maintained which is a 16 bit register holding the address of the next instruction to execute.
 This doesn't have to only be rom, but can be any location in ram, which we can see used with sprites.
 
+2 byte values are stored little endian in memory. Least significant byte is stored first. This matters only to us during reading/writing of 16bit values (eg 16bit math, address pointers).
+
 All programs are written in assembly.
 
 ## Address bus
@@ -136,7 +138,7 @@ There are a number of events that can trigger cpu interrupts, and run code insta
 The main one tetris relies on is the vblank interrupt. This is triggered once the ppu has finished rendering the last visible
 line on the screen, and will then continue to render 10 more off screen. This time is referred to as vblank, and when it is
 entered the vblank interrupt is fired, and we jump to address 0x0040 which then typically jumps to where the games interrupt
-routing is.
+routine is.
 
 Tetris uses this to time and handle screen progressions. It does this by writing to a programmer chosen during vblank
 and checking in the code if it has been changed to 1 to know its interrupt handler ran.

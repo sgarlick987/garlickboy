@@ -53,9 +53,9 @@ fn new_r8(target: &TargetIncDec) -> Box<dyn Iterator<Item = GameboyCycle>> {
                 _ => panic!("invalid register for inc new_r8"),
             }
 
-            gameboy.update_zero_flag(value == 0);
+            gameboy.write_zero_flag(value == 0);
             gameboy.reset_negative_flag();
-            gameboy.update_half_carry_flag(add_bytes_half_carry(register, 1));
+            gameboy.write_half_carry_flag(add_bytes_half_carry(register, 1));
             gameboy.pc = gameboy.pc.wrapping_add(1);
         }));
 
@@ -143,8 +143,8 @@ fn new_ptr() -> Box<dyn Iterator<Item = GameboyCycle>> {
             let value = byte.wrapping_add(1);
             gameboy.write_byte(address, value);
             gameboy.reset_negative_flag();
-            gameboy.update_half_carry_flag(add_bytes_half_carry(byte, 1));
-            gameboy.update_zero_flag(value == 0);
+            gameboy.write_half_carry_flag(add_bytes_half_carry(byte, 1));
+            gameboy.write_zero_flag(value == 0);
             gameboy.pc = gameboy.pc.wrapping_add(1);
         }));
     //carry unmodified

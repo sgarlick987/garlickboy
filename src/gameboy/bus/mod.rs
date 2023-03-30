@@ -20,9 +20,10 @@ const HRAM_ADDRESS_END: u16 = 0xFFFE;
 const BIOS_MAPPED_ADDRESS: u16 = 0xFF50;
 
 pub(crate) trait Bus {
+    fn is_lcd_vblank(&self) -> bool;
     fn inc_ly(&mut self);
     fn inc_div(&mut self);
-    fn lcd_is_enabled(&mut self) -> bool;
+    fn is_lcd_enabled(&mut self) -> bool;
     fn update_display(&mut self, display: &mut Box<dyn Display>);
     fn update_joypad(&mut self, controller: &Box<dyn Controller>);
     fn update_dma(&mut self);
@@ -63,6 +64,9 @@ impl AddressBus {
 }
 
 impl Bus for AddressBus {
+    fn is_lcd_vblank(&self) -> bool {
+        self.gpu.is_lcd_vblank()
+    }
     fn inc_ly(&mut self) {
         self.gpu.inc_ly();
     }
@@ -71,8 +75,8 @@ impl Bus for AddressBus {
         self.div = self.div.wrapping_add(1);
     }
 
-    fn lcd_is_enabled(&mut self) -> bool {
-        self.gpu.lcd_is_enabled()
+    fn is_lcd_enabled(&mut self) -> bool {
+        self.gpu.is_lcd_enabled()
     }
 
     fn update_joypad(&mut self, controller: &Box<dyn Controller>) {

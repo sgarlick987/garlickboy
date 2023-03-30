@@ -10,7 +10,6 @@ use crate::gameboy::Gameboy;
 
 use self::{controller::Controller, display::Display, rom::Rom};
 
-const MAX_MCYCLES_PER_FRAME: u32 = 1050000 / 60;
 const GB_ROM: &str = "data/Tetris.gb";
 
 pub struct Emu {
@@ -67,25 +66,24 @@ impl Emu {
         self.fps_manager.delay();
     }
 
-    pub fn run(&mut self) {
-        self.display.present();
-
-        let mut cycles_used = 0;
-        loop {
-            for cycle in self.gameboy.cycles() {
-                if cycles_used == 0 {
-                    self.handle_events();
-                    self.input();
-                }
-
-                self.gameboy.execute(cycle);
-                cycles_used += 1;
-
-                if cycles_used == MAX_MCYCLES_PER_FRAME {
-                    self.present();
-                    cycles_used = 0;
-                }
+    fn run_cycles(&mut self) {
+        for cycle in self.gameboy.cycles() {
+            if self.gameboy.is_new_frame() {
+                self.handle_events();
+                self.input();
             }
+
+            self.gameboy.execute(cycle);
+
+            if self.gameboy.is_new_frame() {
+                self.present();
+            }
+        }
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            self.run_cycles();
         }
     }
 }

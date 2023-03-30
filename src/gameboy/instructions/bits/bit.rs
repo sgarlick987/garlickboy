@@ -34,7 +34,7 @@ pub fn new(bit: &u8, target: &TargetRegister8) -> Box<dyn Iterator<Item = Gamebo
             let check = 1 << inst.bit;
             let register = gameboy.registers.get_from_enum(&inst.target);
 
-            gameboy.update_zero_flag(register & check == 0);
+            gameboy.write_zero_flag(register & check == 0);
             gameboy.reset_negative_flag();
             gameboy.set_half_carry_flag();
             //carry unmodified

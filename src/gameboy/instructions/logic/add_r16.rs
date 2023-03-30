@@ -49,8 +49,8 @@ pub fn new(target: &TargetRegister16) -> Box<dyn Iterator<Item = GameboyCycle>> 
         let (added, overflowed) = hl.overflowing_add(value);
         let (upper, lower) = split_bytes(added);
         gameboy.registers.l = lower;
-        gameboy.update_carry_flag(overflowed);
-        gameboy.update_half_carry_flag((hl & 0xFF) + (value & 0xFF) > 0xFF);
+        gameboy.write_carry_flag(overflowed);
+        gameboy.write_half_carry_flag((hl & 0xFF) + (value & 0xFF) > 0xFF);
 
         inst.upper = upper;
     }));

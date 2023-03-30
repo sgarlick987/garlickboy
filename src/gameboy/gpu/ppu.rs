@@ -1,6 +1,7 @@
 use crate::emu::display::Display;
 
 use super::{
+    lcd::Lcd,
     palette::{Palette, DEFAULT_PALETTE},
     Gpu, OAM_SIZE, VRAM_SIZE,
 };
@@ -9,26 +10,25 @@ pub(crate) struct Ppu {
     vram: [u8; VRAM_SIZE as usize],
     oam: [u8; OAM_SIZE as usize],
     palette: Palette,
-    pub scrollx: u8,
-    pub scrolly: u8,
-    pub ly: u8,
-    pub lcd_enabled: bool,
+    lcd: Lcd,
+    scrollx: u8,
+    scrolly: u8,
 }
 
 impl Ppu {
     pub fn new() -> Box<dyn Gpu> {
+        let lcd = Lcd::new();
         Box::new(Self {
             vram: [0; VRAM_SIZE as usize],
             oam: [0; OAM_SIZE as usize],
             palette: DEFAULT_PALETTE,
+            lcd,
             scrollx: 0,
             scrolly: 0,
-            ly: 0,
-            lcd_enabled: false,
         })
     }
 
-    fn set_palette(&mut self, palette: u8) {
+    fn write_palette(&mut self, palette: u8) {
         self.palette = Palette::from(palette);
     }
 
@@ -90,29 +90,26 @@ impl Ppu {
 }
 
 impl Gpu for Ppu {
+    fn is_lcd_vblank(&self) -> bool {
+        self.lcd.is_mode_vblank()
+    }
+
     fn write_vram(&mut self, address: u16, byte: u8) {
         self.vram[address as usize] = byte;
     }
 
     fn write_oam(&mut self, address: u16, byte: u8) {
-        if byte != 0 {
-            let _a = 1;
-        }
         self.oam[address as usize] = byte;
     }
 
     fn write_registers(&mut self, address: u16, byte: u8) {
         match address {
-            0xFF47 => self.set_palette(byte),
+            0xFF47 => self.write_palette(byte),
+            0xFF45 => self.lcd.write_lyc(byte),
             0xFF43 => self.scrollx = byte,
             0xFF42 => self.scrolly = byte,
-            0xFF40 => {
-                let lcd_on = byte >> 7 == 1;
-                if !self.lcd_enabled && lcd_on {
-                    self.ly = 0;
-                }
-                self.lcd_enabled = lcd_on;
-            }
+            0xFF41 => self.lcd.write_stat(byte),
+            0xFF40 => self.lcd.write_control(byte),
             _ => panic!("unimplemented write gpu register {:x}", address),
         }
     }
@@ -128,22 +125,18 @@ impl Gpu for Ppu {
     fn read_registers(&self, address: u16) -> u8 {
         match address {
             // 0xFF47 => u8::from(self.palette),
-            0xFF44 => self.ly,
+            0xFF45 => self.lcd.read_lyc(),
+            0xFF44 => self.lcd.read_ly(),
             0xFF43 => self.scrollx,
             0xFF42 => self.scrolly,
-            0xFF40 => {
-                let mut lcd = 0;
-                if self.lcd_enabled {
-                    lcd |= 1 << 7;
-                }
-                lcd
-            }
+            0xFF41 => self.lcd.read_stat(),
+            0xFF40 => self.lcd.read_control(),
             _ => panic!("unimplemented read gpu register {:x}", address),
         }
     }
 
     fn update(&mut self, display: &mut Box<dyn Display>) {
-        if !self.lcd_enabled {
+        if !self.is_lcd_enabled() {
             display.off();
             return;
         }
@@ -167,17 +160,10 @@ impl Gpu for Ppu {
     }
 
     fn inc_ly(&mut self) {
-        if !self.lcd_enabled {
-            panic!("gpu inc_ly should not be called while lcd is not enable");
-        }
-
-        self.ly += 1;
-        if self.ly == 154 {
-            self.ly = 0;
-        }
+        self.lcd.inc_ly();
     }
 
-    fn lcd_is_enabled(&mut self) -> bool {
-        self.lcd_enabled
+    fn is_lcd_enabled(&mut self) -> bool {
+        self.lcd.is_lcd_enabled()
     }
 }

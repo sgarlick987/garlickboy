@@ -32,9 +32,9 @@ pub fn new(target: &TargetRegister8) -> Box<dyn Iterator<Item = GameboyCycle>> {
             let byte = gameboy.registers.get_from_enum(&inst.target);
             let a = gameboy.registers.a;
             gameboy.set_negative_flag();
-            gameboy.update_zero_flag(a == byte);
-            gameboy.update_carry_flag(a < byte);
-            gameboy.update_half_carry_flag(sub_bytes_half_carry(a, byte));
+            gameboy.write_zero_flag(a == byte);
+            gameboy.write_carry_flag(a < byte);
+            gameboy.write_half_carry_flag(sub_bytes_half_carry(a, byte));
             gameboy.pc = gameboy.pc.wrapping_add(1);
         }));
 
