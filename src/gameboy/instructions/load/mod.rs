@@ -1,5 +1,6 @@
 pub mod ld_a_ptr;
 pub mod ld_a_u16;
+pub mod ld_bc_a;
 pub mod ld_de_a;
 pub mod ld_hl_r8;
 pub mod ld_hl_sp_i8;

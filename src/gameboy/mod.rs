@@ -35,8 +35,6 @@ pub struct Gameboy {
 struct Timers {
     ly: u8,
     div: u8,
-    vblank: u8,
-    mode_two: u8,
 }
 
 impl Gameboy {
@@ -44,12 +42,7 @@ impl Gameboy {
         let registers = Registers::new();
         let interrupt_handler = InterruptHandler::new();
         let bus = new_address_bus();
-        let timers = Timers {
-            ly: 0,
-            vblank: 0,
-            div: 0,
-            mode_two: 0,
-        };
+        let timers = Timers { ly: 0, div: 0 };
 
         Self {
             registers,
@@ -70,7 +63,7 @@ impl Gameboy {
         if has_interrupts {
             cycles
         } else {
-            self.prefetch()
+            self.fetch()
         }
     }
 
@@ -78,6 +71,10 @@ impl Gameboy {
         self.bus.update_dma();
         step(self);
         self.update_timers();
+        self.update_cycles_used();
+    }
+
+    fn update_cycles_used(&mut self) {
         self.cycles_used += 1;
 
         if self.cycles_used == MAX_MCYCLES_PER_FRAME {
@@ -101,7 +98,7 @@ impl Gameboy {
         self.bus.update_display(display);
     }
 
-    fn prefetch(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
+    fn fetch(&mut self) -> Box<dyn Iterator<Item = GameboyCycle>> {
         let mut instruction_byte = self.bus.read_byte(self.pc);
 
         let prefixed = instruction_byte == BYTE_PREFIX;
@@ -117,8 +114,8 @@ impl Gameboy {
         } else {
             Instruction::from_byte(instruction_byte, prefixed)
         };
-        if self.pc == 0x0100 {
-            self.trace = false;
+        if self.pc == 0xc6d6 {
+            self.trace = true;
         }
         if instruction == Instruction::UNIMPLEMENTED {
             panic!("Unkown Instruction found for: 0x{:x}", instruction_byte);

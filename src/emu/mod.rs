@@ -10,7 +10,7 @@ use crate::gameboy::Gameboy;
 
 use self::{controller::Controller, display::Display, rom::Rom};
 
-const GB_ROM: &str = "data/Tetris.gb";
+const GB_ROM: &str = "data/test/cpu_instrs/individual/05-op rp.gb";
 
 pub struct Emu {
     gameboy: Gameboy,

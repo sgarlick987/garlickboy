@@ -40,6 +40,7 @@ impl Instruction {
             //load
             Instruction::LDAPTR(target) => ld_a_ptr::new(target),
             Instruction::LDAU16 => ld_a_u16::new(),
+            Instruction::LDBCA => ld_bc_a::new(),
             Instruction::LDDEA => ld_de_a::new(),
             Instruction::LDHLR8(target) => ld_hl_r8::new(target),
             Instruction::LDHLSPI8 => ld_hl_sp_i8::new(),

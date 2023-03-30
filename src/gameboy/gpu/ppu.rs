@@ -69,10 +69,20 @@ impl Ppu {
         let end = start + 16;
 
         for line in self.vram[(start as usize)..(end as usize)].chunks(2) {
-            let y = y + row;
-            if y < self.scrolly || y > (self.scrolly + 143) {
-                row += 1;
-                continue;
+            let mut y = y + row;
+            let (scrolly_end, overflowed) = self.scrolly.overflowing_add(143);
+            if overflowed {
+                if y < self.scrolly && y > (scrolly_end) {
+                    row += 1;
+                    continue;
+                }
+                y = y + (144 - scrolly_end);
+            } else {
+                if y < self.scrolly || y > (scrolly_end) {
+                    row += 1;
+                    continue;
+                }
+                y = y - self.scrolly;
             }
             let lower = line[0];
             let upper = line[1];
@@ -82,7 +92,7 @@ impl Ppu {
                 if x > 159 {
                     continue;
                 }
-                display.draw_pixel(x, y - self.scrolly, *pixel);
+                display.draw_pixel(x, y, *pixel);
             }
             row += 1;
         }

@@ -79,25 +79,25 @@ pub fn new(comparison: &Comparison) -> Box<dyn Iterator<Item = GameboyCycle>> {
         }
     }));
 
-    let inst_ref = inst.clone();
-    executions.push_back(Box::new(move |gameboy: &mut Gameboy| {
-        let mut inst = inst_ref.borrow_mut();
-        (inst.return_upper, inst.return_lower) = split_bytes(gameboy.pc.wrapping_add(3));
-        let address = merge_bytes(inst.upper, inst.lower);
-        gameboy.pc = address;
-    }));
+    // let inst_ref = inst.clone();
+    // executions.push_back(Box::new(move |gameboy: &mut Gameboy| {
+    //     let mut inst = inst_ref.borrow_mut();
+    //     (inst.return_upper, inst.return_lower) = split_bytes(gameboy.pc.wrapping_add(3));
+    //     let address = merge_bytes(inst.upper, inst.lower);
+    //     gameboy.pc = address;
+    // }));
 
-    let inst_ref = inst.clone();
-    executions.push_back(Box::new(move |gameboy: &mut Gameboy| {
-        let inst = inst_ref.borrow_mut();
-        gameboy.push(inst.return_upper);
-    }));
+    // let inst_ref = inst.clone();
+    // executions.push_back(Box::new(move |gameboy: &mut Gameboy| {
+    //     let inst = inst_ref.borrow_mut();
+    //     gameboy.push(inst.return_upper);
+    // }));
 
-    let inst_ref = inst.clone();
-    executions.push_back(Box::new(move |gameboy: &mut Gameboy| {
-        let inst = inst_ref.borrow_mut();
-        gameboy.push(inst.return_lower);
-    }));
+    // let inst_ref = inst.clone();
+    // executions.push_back(Box::new(move |gameboy: &mut Gameboy| {
+    //     let inst = inst_ref.borrow_mut();
+    //     gameboy.push(inst.return_lower);
+    // }));
 
     Box::new(InstWrapper { inst, executions })
 }
