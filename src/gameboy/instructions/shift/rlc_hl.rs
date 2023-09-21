@@ -1,0 +1,49 @@
+use crate::gameboy::{Gameboy, GameboyCycle, GameboyCycles};
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+
+// RLC (HL) - 0x06
+// Length: 2 bytes
+// Flags
+// Zero	dependent
+// Negative	unset
+// Half Carry	unset
+// Carry	dependent
+// Group: x8/rsb
+// Timing
+// without branch (16t)
+// fetch	(0xCB)
+// fetch
+// read	(HL)
+// write	(HL)
+pub fn new() -> GameboyCycles {
+    let byte = Rc::new(RefCell::new(0u8));
+    let mut cycles: VecDeque<GameboyCycle> = VecDeque::with_capacity(4);
+
+    cycles.push_back(Box::new(|_: &mut Gameboy| {
+        //fetch
+    }));
+
+    cycles.push_back(Box::new(|_: &mut Gameboy| {
+        //fetch
+    }));
+
+    let byte_ref = byte.clone();
+    cycles.push_back(Box::new(move |gameboy: &mut Gameboy| {
+        let hl = gameboy.registers.get_hl();
+        byte_ref.replace(gameboy.read_byte(hl));
+    }));
+
+    let byte_ref = byte.clone();
+    cycles.push_back(Box::new(move |gameboy: &mut Gameboy| {
+        let byte = byte_ref.take();
+        let value = byte.rotate_left(1);
+        gameboy.write_byte(gameboy.registers.get_hl(), value);
+        gameboy.write_carry_flag(byte >> 7 == 1);
+        gameboy.write_zero_flag(value == 0);
+        gameboy.reset_half_carry_flag();
+        gameboy.reset_negative_flag();
+        gameboy.pc = gameboy.pc.wrapping_add(2);
+    }));
+
+    Box::new(cycles.into_iter())
+}
